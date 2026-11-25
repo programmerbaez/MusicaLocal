@@ -1,0 +1,4 @@
+/* Metadatos de la aplicación (español). */
+"CFBundleName" = "Música Local";
+"CFBundleDisplayName" = "Música Local";
+"NSHumanReadableCopyright" = "© 2026 Andrés Báez. Software de código abierto y gratuito (MIT).";

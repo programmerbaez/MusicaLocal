@@ -1,0 +1,10 @@
+MusicaLocal.app/
+.DS_Store
+*.app/
+*.dSYM/
+logs/
+build/
+settings.json
+library.json
+Artworks/
+dist/
