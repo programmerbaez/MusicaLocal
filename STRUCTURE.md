@@ -70,7 +70,7 @@ MusicaLocal_1.0/
 └── TERMINOS_Y_CONDICIONES.md
 ```
 
-Al compilar se crean **`logs/`**, **`release/.app/MusicaLocal.app`** y **`release/.zip/MusicaLocal V1.0.0.zip`** como salidas locales del build.
+Al compilar se crean **`logs/`**, **`releases/app/MusicaLocal.app`** y **`releases/zip/MusicaLocal V1.0.0.zip`** como salidas locales del build.
 
 ## 2. Responsabilidad de los módulos
 

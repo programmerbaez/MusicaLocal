@@ -72,6 +72,11 @@ struct GitHubMusicRelease: Decodable {
 
 @MainActor
 final class UpdateChecker: ObservableObject {
+    enum Status {
+        case idle, upToDate, available(UpdateInstaller.Archive), missingArchive(ReleaseVersion)
+        case failed(String), installed(ReleaseVersion)
+    }
+
     struct Notice: Identifiable {
         let id = UUID()
         let title: String
@@ -81,9 +86,12 @@ final class UpdateChecker: ObservableObject {
 
     @Published var notice: Notice?
     @Published private(set) var installing = false
+    @Published private(set) var checking = false
+    @Published private(set) var status: Status = .idle
+    let installedVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
     private var checkedAtLaunch = false
-    private var checking = false
     private var reportResult = false
+    private var showAvailabilityNotice = false
 
     func checkAutomatically() {
         guard !checkedAtLaunch else { return }
@@ -91,9 +99,10 @@ final class UpdateChecker: ObservableObject {
         check(manual: false)
     }
 
-    func check(manual: Bool = true) {
+    func check(manual: Bool = true, notifyAvailability: Bool = true) {
         guard !installing else { return }
         reportResult = reportResult || manual
+        showAvailabilityNotice = showAvailabilityNotice || notifyAvailability
         guard !checking else { return }
         checking = true
         Task { await fetchLatestRelease() }
@@ -103,6 +112,7 @@ final class UpdateChecker: ObservableObject {
         defer {
             checking = false
             reportResult = false
+            showAvailabilityNotice = false
         }
         let endpoint = URL(string: "https://api.github.com/repos/programmerbaez/MusicaLocal/releases/latest")!
         var request = URLRequest(url: endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
@@ -127,7 +137,7 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func present(_ release: GitHubMusicRelease) {
-        guard let installedText = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+        guard let installedText = installedVersion,
               let installed = ReleaseVersion(installedText),
               !release.draft, !release.prerelease,
               let latest = release.version else {
@@ -136,17 +146,26 @@ final class UpdateChecker: ObservableObject {
         }
         if latest > installed {
             guard let archive = release.archive(for: latest) else {
-                notice = Notice(title: "Actualización sin instalador ZIP",
-                                message: "La versión \(latest) todavía no ofrece un ZIP verificable para la instalación automática.")
+                status = .missingArchive(latest)
+                if showAvailabilityNotice {
+                    notice = Notice(title: "Actualización sin instalador ZIP",
+                                    message: "La versión \(latest) todavía no ofrece un ZIP verificable para la instalación automática.")
+                }
                 return
             }
-            notice = Notice(
-                title: "Actualización disponible",
-                message: "Música Local descargará e instalará la versión \(latest) y se reiniciará.",
-                archive: archive
-            )
-        } else if reportResult {
-            notice = Notice(title: "Música Local está al día", message: "Versión instalada \(installedText).")
+            status = .available(archive)
+            if showAvailabilityNotice {
+                notice = Notice(
+                    title: "Actualización disponible",
+                    message: "Música Local descargará e instalará la versión \(latest) y se reiniciará.",
+                    archive: archive
+                )
+            }
+        } else {
+            status = .upToDate
+            if reportResult {
+                notice = Notice(title: "Música Local está al día", message: "Versión instalada \(installedText).")
+            }
         }
     }
 
@@ -167,6 +186,7 @@ final class UpdateChecker: ObservableObject {
             installing = false
             return
         }
+        status = .installed(archive.version)
         do {
             let configuration = NSWorkspace.OpenConfiguration()
             configuration.createsNewApplicationInstance = true
@@ -180,6 +200,7 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func report(_ message: String) {
+        status = .failed(message)
         if reportResult {
             notice = Notice(title: "No se pudo buscar actualizaciones", message: message)
         }

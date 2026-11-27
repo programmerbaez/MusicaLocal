@@ -19,7 +19,10 @@ struct HeaderBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            WindowControls()
+            HStack(spacing: 12) {
+                WindowControls()
+                UpdateMenuButton()
+            }
 
             if p.folderURL != nil {
                 Label("\(p.folderName) · \(p.tracks.count) \(p.tracks.count == 1 ? "canción" : "canciones")",

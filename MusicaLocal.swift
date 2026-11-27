@@ -27,6 +27,7 @@ struct MusicaLocalApp: App {
             ContentView(accent: accent)
                 .environmentObject(player)
                 .environmentObject(mini)
+                .environmentObject(updates)
                 .onAppear {
                     SpanishMenuLocalization.install()
                     mini.configure(player: player, accent: accent)
