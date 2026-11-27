@@ -37,7 +37,7 @@ private struct HelpMusicaLocalView: View {
                         .font(.system(size: 30))
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Ayuda de Música Local").font(.title2).bold()
-                        Text("Guía rápida · Versión 1.0").font(.subheadline).foregroundColor(.secondary)
+                        Text("Guía rápida · \(AppVersion.label)").font(.subheadline).foregroundColor(.secondary)
                     }
                 }
                 Divider()

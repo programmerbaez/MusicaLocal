@@ -7,6 +7,14 @@ import ImageIO
 import MediaPlayer
 import QuartzCore
 
+enum AppVersion {
+    static let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+
+    static var label: String {
+        current.map { "Versión \($0)" } ?? "Versión desconocida"
+    }
+}
+
 func fmt(_ t: Double) -> String {
     guard t.isFinite, t > 0 else { return "0:00" }
     let s = Int(t)

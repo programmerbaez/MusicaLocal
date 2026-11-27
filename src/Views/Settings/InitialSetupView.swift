@@ -82,7 +82,7 @@ struct InitialSetupView: View {
     private var agreements: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Proyecto gratuito y de código abierto").font(.headline)
-            Text("Música Local 1.0 es una aplicación gratuita desarrollada por Andrés Báez y publicada bajo licencia MIT. Puedes consultar las condiciones completas y la política de privacidad en los documentos incluidos.")
+            Text("Música Local es una aplicación gratuita desarrollada por Andrés Báez y publicada bajo licencia MIT. Puedes consultar las condiciones completas y la política de privacidad en los documentos incluidos.")
             Text("La aplicación reproduce música local. La biblioteca, las carátulas y las preferencias se guardan en tu equipo. Debes contar con los derechos necesarios para utilizar tus archivos musicales.")
                 .foregroundColor(.secondary)
             Text("Se distribuye tal cual, sin garantías. Las mejoras de audio son opcionales y pueden desactivarse.")

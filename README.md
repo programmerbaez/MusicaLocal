@@ -1,4 +1,4 @@
-# Música Local · Versión 1.0
+# Música Local · Versión 1.0.1
 
 **Reproductor nativo de música local para macOS**  
 **Desarrollo:** Andrés Báez · **Licencia:** MIT · **Distribución:** Gratuita · **Idioma:** Español
@@ -95,7 +95,7 @@ open release/app/MusicaLocal.app
 
 > Los porcentajes son hitos del script, no tiempos estimados ni avances continuos.
 
-El build publica la aplicación en `release/app/MusicaLocal.app` y una copia comprimida en `release/zip/MusicaLocal V1.0.0.zip`. Cada compilación exitosa reemplaza ambas salidas.
+El build publica la aplicación en `release/app/MusicaLocal.app` y una copia comprimida en `release/zip/MusicaLocal V1.0.1.zip`. Cada compilación exitosa reemplaza ambas salidas.
 
 ### Actualizaciones
 
@@ -252,4 +252,4 @@ Los registros se guardan en `logs/build-history.log` y `logs/build-AAAAMMDD-HHMM
 
 El software es **gratuito y de código abierto** y se distribuye según [LICENSE.md](LICENSE.md) (MIT). La documentación adicional está disponible en [Términos y condiciones](TERMINOS_Y_CONDICIONES.md) y [Privacidad](PRIVACIDAD.md); desde «Acerca de» también pueden consultarse dentro de la aplicación.
 
-**Autor:** Andrés Báez · **Versión pública:** 1.0 · **Idiomas:** español (estructura preparada para localizaciones futuras).
+**Autor:** Andrés Báez · **Versión pública:** 1.0.1 · **Idiomas:** español (estructura preparada para localizaciones futuras).

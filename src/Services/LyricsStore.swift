@@ -71,7 +71,7 @@ actor LyricsStore {
         guard let endpoint = url.url else { throw LookupError.service }
         var request = URLRequest(url: endpoint, timeoutInterval: 12)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let version = AppVersion.current ?? "desarrollo"
         request.setValue("MusicaLocal/\(version) (https://github.com/programmerbaez/MusicaLocal)", forHTTPHeaderField: "User-Agent")
         let (data, response) = try await URLSession.shared.data(for: request)
         try Task.checkCancellation()

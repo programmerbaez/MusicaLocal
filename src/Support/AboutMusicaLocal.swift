@@ -55,7 +55,7 @@ private struct AboutMusicaLocalView: View {
 
             Text("Música Local")
                 .font(.system(size: 24, weight: .bold))
-            Text("Versión 1.0")
+            Text(AppVersion.label)
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
 
@@ -324,7 +324,7 @@ private struct LegalDocumentsView: View {
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                Text("Versión 1.0")
+                Text(AppVersion.label)
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }

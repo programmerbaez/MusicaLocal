@@ -88,7 +88,7 @@ final class UpdateChecker: ObservableObject {
     @Published private(set) var installing = false
     @Published private(set) var checking = false
     @Published private(set) var status: Status = .idle
-    let installedVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+    let installedVersion = AppVersion.current
     private var checkedAtLaunch = false
     private var reportResult = false
     private var showAvailabilityNotice = false
