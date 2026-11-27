@@ -16,6 +16,7 @@ MusicaLocal_1.0/
 │   ├── Models/
 │   │   ├── AccentModel.swift
 │   │   ├── ColumnLayout.swift
+│   │   ├── Lyrics.swift
 │   │   ├── PlaybackModels.swift
 │   │   └── Track.swift
 │   ├── Player/
@@ -26,6 +27,7 @@ MusicaLocal_1.0/
 │   │   ├── AudioEnhancementEngine.swift
 │   │   ├── FilenameParser.swift
 │   │   ├── LibraryCache.swift
+│   │   ├── LyricsStore.swift
 │   │   ├── NowPlayingBridge.swift
 │   │   ├── PlaylistStore.swift
 │   │   ├── SettingsStore.swift
@@ -53,6 +55,7 @@ MusicaLocal_1.0/
 │       │   ├── ColumnHeader.swift
 │       │   ├── ContentView.swift
 │       │   ├── HeaderBar.swift
+│       │   ├── LyricsPlayerView.swift
 │       │   ├── PlayerBar.swift
 │       │   └── TrackRow.swift
 │       ├── MiniPlayer/
@@ -78,6 +81,7 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 |---|---|
 | `src/Models/AccentModel.swift` | Selección cromática según carátula y respaldo del sistema |
 | `src/Models/ColumnLayout.swift` | Disposición de columnas en la biblioteca |
+| `src/Models/Lyrics.swift` | Lectura de marcas LRC y selección de línea por tiempo |
 | `src/Models/PlaybackModels.swift` | Estado de reproducción, reloj y modos |
 | `src/Models/Track.swift` | Representación de las pistas y sus metadatos |
 | `src/Player/Player.swift` | Reproducción, navegación, cola y coordinación de motores |
@@ -86,6 +90,7 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 | `src/Services/AudioEnhancementEngine.swift` | AVAudioEngine y perfiles experimentales de ecualización |
 | `src/Services/FilenameParser.swift` | Extracción de datos desde nombres de archivos |
 | `src/Services/LibraryCache.swift` | Cache de biblioteca y directorio de datos |
+| `src/Services/LyricsStore.swift` | Archivos LRC locales, consulta de LRCLIB y almacenamiento de letras descargadas |
 | `src/Services/NowPlayingBridge.swift` | Integración de información multimedia y comandos remotos macOS |
 | `src/Services/PlaylistStore.swift` | Guarda y recupera las listas de reproducción como archivos `.js` con datos JSON |
 | `src/Services/SettingsStore.swift` | Lectura y guardado de settings.json |
@@ -108,6 +113,7 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 | `src/Views/Main/ColumnHeader.swift` | Cabeceras de columnas |
 | `src/Views/Main/ContentView.swift` | Vista de biblioteca y reproductor principal |
 | `src/Views/Main/HeaderBar.swift` | Cabecera principal |
+| `src/Views/Main/LyricsPlayerView.swift` | Vista de letras con desplazamiento sincronizado y salto por línea |
 | `src/Views/Main/PlayerBar.swift` | Controles, volumen, progreso y visualizador |
 | `src/Views/Main/TrackRow.swift` | Fila de canción y resaltado activo |
 | `src/Views/MiniPlayer/MiniPlayerView.swift` | Interfaz mini compacta y ampliada |

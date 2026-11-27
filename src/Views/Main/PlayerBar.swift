@@ -14,6 +14,7 @@ struct PlayerBar: View {
     @ObservedObject var p: Player
     @ObservedObject var clock: PlaybackClock
     @ObservedObject var accent: AccentModel
+    @Binding var showingLyrics: Bool
 
     var body: some View {
         VStack(spacing: 6) {
@@ -111,6 +112,14 @@ struct PlayerBar: View {
 
     private var volumeControl: some View {
         HStack(spacing: 8) {
+            Button { showingLyrics.toggle() } label: {
+                Image(systemName: showingLyrics ? "quote.bubble.fill" : "quote.bubble")
+                    .foregroundColor(showingLyrics ? .primary : .secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(p.nowPlaying == nil)
+            .help(showingLyrics ? "Ocultar letras" : "Mostrar letras")
+            .accessibilityLabel(showingLyrics ? "Ocultar letras" : "Mostrar letras")
             PlaybackQueueButton(player: p, accent: accent)
             Button { p.toggleMute() } label: {
                 Image(systemName: volumeIcon)

@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var playlistName = ""
     @State private var creationError: String?
     @State private var playlistError: String?
+    @State private var showingLyrics = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,7 +26,10 @@ struct ContentView: View {
             }
             Divider()
 
-            if let playlist = p.activePlaylist,
+            if showingLyrics, let track = p.nowPlaying {
+                LyricsPlayerView(track: track, clock: p.clock, accent: accent) { p.seek($0) }
+                    .id(track.id)
+            } else if let playlist = p.activePlaylist,
                playlist.trackPaths.count == p.unavailablePlaylistPaths.count {
                 emptyPlaylist(playlist)
             } else if p.tracks.isEmpty {
@@ -37,7 +41,7 @@ struct ContentView: View {
             }
 
             Divider()
-            PlayerBar(p: p, clock: p.clock, accent: accent)
+            PlayerBar(p: p, clock: p.clock, accent: accent, showingLyrics: $showingLyrics)
         }
         .foregroundColor(scheme == .light ? AppearancePalette.charcoal : .primary)
         .background(AccentBackground())
@@ -45,6 +49,10 @@ struct ContentView: View {
         .ignoresSafeArea(.container, edges: .top)
         .symbolRenderingMode(.hierarchical)
         .frame(minWidth: 780, idealWidth: 940, minHeight: 500, idealHeight: 640)
+        .onChange(of: p.nowPlaying?.id) { if $0 == nil { showingLyrics = false } }
+        .onChange(of: p.scrollRequest) { if $0?.revealLibrary == true { showingLyrics = false } }
+        .onChange(of: p.activePlaylistID) { _ in showingLyrics = false }
+        .onChange(of: p.query) { _ in showingLyrics = false }
         .sheet(isPresented: $creatingPlaylist) { playlistForm }
         .alert("No se pudo actualizar la lista", isPresented: Binding(
             get: { playlistError != nil },
@@ -172,6 +180,11 @@ struct ContentView: View {
                                         }
                                     }
                             }
+                        }
+                    }
+                    .onAppear {
+                        if let request = p.scrollRequest, request.revealLibrary {
+                            proxy.scrollTo(request.id, anchor: .center)
                         }
                     }
                     .onChange(of: p.scrollRequest) { req in

@@ -27,6 +27,7 @@ Música Local reproduce una biblioteca de archivos locales con una interfaz Swif
 | Reproducción | Reproducir, pausar, avanzar, retroceder, buscar posición, volumen y silencio |
 | Biblioteca | Selección de carpeta, metadatos, carátulas, actualización y caché |
 | Cola | Orden automático, aleatorio, selección directa y resaltado de pista actual |
+| Letras | Vista de reproducción con carátula, letra y seguimiento por línea en el reproductor principal |
 | Listas de reproducción | Creación con nombre, edición de canciones y reproducción desde la lista seleccionada |
 | Interfaz | Reproductor principal, mini compacto y mini ampliado, con transiciones que respetan «Reducir movimiento» de macOS |
 | Apariencia | Tema del sistema, claro marfil y oscuro; fondo translúcido opcional |
@@ -121,6 +122,12 @@ flowchart TD
 ```
 
 La configuración se edita posteriormente en **Música Local → Configuración**. La carpeta se administra en **Configuración → Caché**.
+
+### Letras sincronizadas
+
+Reproduce una canción y pulsa el botón de **Letras**, junto a **Cola**, para abrir la vista con carátula y letra. La línea activa se resalta y se desplaza con la reproducción. Haz clic en una línea para saltar a ese punto. Las letras disponibles sin marcas de tiempo se muestran como texto.
+
+Música Local busca primero un archivo `.lrc` con el mismo nombre que el audio, en la misma carpeta, y después una copia descargada. Si debe buscar en línea, solo lo hace mientras la vista está abierta y envía a [LRCLIB](https://lrclib.net/docs) el título, el artista y, cuando están disponibles, el álbum y la duración. Las letras descargadas quedan en `~/Library/Application Support/MusicaLocal/Lyrics/` y se pueden volver a leer sin conexión.
 
 ### Listas de reproducción
 

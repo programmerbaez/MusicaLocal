@@ -447,15 +447,15 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     // MARK: Selección y desplazamiento
 
-    private func requestScroll(id: String, center: Bool) {
+    private func requestScroll(id: String, center: Bool, revealLibrary: Bool = false) {
         scrollNonce += 1
-        scrollRequest = ScrollRequest(id: id, center: center, nonce: scrollNonce)
+        scrollRequest = ScrollRequest(id: id, center: center, nonce: scrollNonce, revealLibrary: revealLibrary)
     }
 
     /// Lleva la lista hasta la canción que está sonando.
-    func revealCurrent() {
+    func revealCurrent(revealLibrary: Bool = true) {
         guard let id = nowPlaying?.id, visible.contains(where: { $0.id == id }) else { return }
-        requestScroll(id: id, center: true)
+        requestScroll(id: id, center: true, revealLibrary: revealLibrary)
     }
 
     func moveSelection(_ delta: Int) {
@@ -550,7 +550,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             shufflePlan.removeFirst(min(index + 1, shufflePlan.count))
         }
         play(selected)
-        revealCurrent()
+        revealCurrent(revealLibrary: false)
     }
 
     /// Plan estable generado una vez, no en cada render de SwiftUI.
@@ -727,7 +727,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         if !upcomingQueue.isEmpty {
             let queued = upcomingQueue.removeFirst()
             play(queued)
-            if !auto { revealCurrent() }
+            if !auto { revealCurrent(revealLibrary: false) }
             return
         }
 
@@ -753,7 +753,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             }
             let pick = shufflePlan.removeFirst()
             play(pick)
-            if !auto { revealCurrent() }
+            if !auto { revealCurrent(revealLibrary: false) }
             return
         }
 
@@ -763,7 +763,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             return
         }
         play(list[(idx + 1) % list.count])
-        if !auto { revealCurrent() }
+        if !auto { revealCurrent(revealLibrary: false) }
     }
 
     func previous() {
@@ -789,7 +789,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
                         shufflePlan.removeAll { $0.id == forward.id }
                         shufflePlan.insert(forward, at: 0)
                     }
-                    revealCurrent()
+                    revealCurrent(revealLibrary: false)
                     return
                 }
             }
@@ -801,7 +801,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
         let idx = nowPlaying.flatMap { cur in list.firstIndex { $0.id == cur.id } } ?? 0
         play(list[(idx - 1 + list.count) % list.count])
-        revealCurrent()
+        revealCurrent(revealLibrary: false)
     }
 
     func seek(_ time: Double) {

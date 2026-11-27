@@ -42,5 +42,6 @@ struct ScrollRequest: Equatable {
     let id: String
     let center: Bool
     let nonce: Int
+    let revealLibrary: Bool
 }
 
