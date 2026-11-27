@@ -27,6 +27,7 @@ MusicaLocal_1.0/
 │   │   ├── FilenameParser.swift
 │   │   ├── LibraryCache.swift
 │   │   ├── NowPlayingBridge.swift
+│   │   ├── PlaylistStore.swift
 │   │   ├── SettingsStore.swift
 │   │   └── ShortcutManager.swift
 │   ├── Structure/
@@ -84,6 +85,7 @@ Al compilar se crean **`logs/`**, **`release/.app/MusicaLocal.app`** y **`releas
 | `src/Services/FilenameParser.swift` | Extracción de datos desde nombres de archivos |
 | `src/Services/LibraryCache.swift` | Cache de biblioteca y directorio de datos |
 | `src/Services/NowPlayingBridge.swift` | Integración de información multimedia y comandos remotos macOS |
+| `src/Services/PlaylistStore.swift` | Guarda y recupera las listas de reproducción como archivos `.js` con datos JSON |
 | `src/Services/SettingsStore.swift` | Lectura y guardado de settings.json |
 | `src/Services/ShortcutManager.swift` | Atajos configurables |
 | `src/Structure/MiniPlayerController.swift` | Gestión del NSPanel compacto y ampliado |
@@ -155,6 +157,7 @@ La biblioteca y las preferencias se almacenan habitualmente en:
 ~/Library/Application Support/MusicaLocal/
 ├── Artworks/
 ├── library.json
+├── Playlist/
 └── settings.json
 ```
 

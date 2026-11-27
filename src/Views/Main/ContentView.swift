@@ -13,13 +13,22 @@ struct ContentView: View {
     @Environment(\.colorScheme) private var scheme
     @EnvironmentObject var p: Player
     let accent: AccentModel
+    @State private var creatingPlaylist = false
+    @State private var playlistName = ""
+    @State private var creationError: String?
+    @State private var playlistError: String?
 
     var body: some View {
         VStack(spacing: 0) {
             HeaderBar(accent: accent)
             Divider()
+            playlistBar
+            Divider()
 
-            if p.tracks.isEmpty {
+            if let playlist = p.activePlaylist,
+               playlist.trackPaths.count == p.unavailablePlaylistPaths.count {
+                emptyPlaylist(playlist)
+            } else if p.tracks.isEmpty {
                 emptyState
             } else if p.visible.isEmpty {
                 noResults
@@ -36,10 +45,106 @@ struct ContentView: View {
         .ignoresSafeArea(.container, edges: .top)
         .symbolRenderingMode(.hierarchical)
         .frame(minWidth: 780, idealWidth: 940, minHeight: 500, idealHeight: 640)
+        .sheet(isPresented: $creatingPlaylist) { playlistForm }
+        .alert("No se pudo actualizar la lista", isPresented: Binding(
+            get: { playlistError != nil },
+            set: { if !$0 { playlistError = nil } }
+        )) {
+            Button("Aceptar", role: .cancel) { playlistError = nil }
+        } message: {
+            Text(playlistError ?? "")
+        }
         .onAppear {
             // Que el buscador no se quede con el foco al arrancar (bloquearía los atajos y las flechas)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { resignFocus() }
         }
+    }
+
+    private var playlistBar: some View {
+        HStack {
+            Menu {
+                Button("Biblioteca") { p.selectPlaylist(nil) }
+                if !p.playlists.isEmpty {
+                    Divider()
+                    ForEach(p.playlists) { playlist in
+                        Button(playlist.name) { p.selectPlaylist(playlist.id) }
+                    }
+                }
+            } label: {
+                Label(p.activePlaylist?.name ?? "Biblioteca", systemImage: "music.note.list")
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: 320, alignment: .leading)
+            .help("Elegir biblioteca o lista de reproducción")
+
+            Button {
+                playlistName = ""
+                creationError = nil
+                creatingPlaylist = true
+            } label: {
+                Label("Nueva lista…", systemImage: "plus")
+            }
+
+            if !p.unavailablePlaylistPaths.isEmpty {
+                Menu("Canciones fuera de la biblioteca") {
+                    ForEach(p.unavailablePlaylistPaths, id: \.self) { path in
+                        Button("Quitar \(path)") {
+                            editPlaylist { try p.removeFromActivePlaylist(path: path) }
+                        }
+                    }
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+    }
+
+    private var playlistForm: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Nueva lista de reproducción").font(.headline)
+            TextField("Nombre de la lista", text: $playlistName)
+                .onSubmit(createPlaylist)
+            if let error = creationError {
+                Text(error).foregroundColor(.red).fixedSize(horizontal: false, vertical: true)
+            }
+            HStack {
+                Spacer()
+                Button("Cancelar") { creatingPlaylist = false }
+                    .keyboardShortcut(.cancelAction)
+                Button("Crear", action: createPlaylist)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 380)
+    }
+
+    private func createPlaylist() {
+        do {
+            try p.createPlaylist(named: playlistName)
+            creatingPlaylist = false
+        } catch {
+            creationError = error.localizedDescription
+        }
+    }
+
+    private func editPlaylist(_ edit: () throws -> Void) {
+        do { try edit() }
+        catch { playlistError = error.localizedDescription }
+    }
+
+    private func emptyPlaylist(_ playlist: Playlist) -> some View {
+        VStack(spacing: 8) {
+            Text(playlist.trackPaths.isEmpty ? "Esta lista está vacía" : "No hay canciones disponibles")
+                .font(.title3.weight(.semibold))
+            if playlist.trackPaths.isEmpty {
+                Text("Desde la biblioteca, haz clic secundario en una canción y elige «Añadir a una lista».")
+                    .foregroundColor(.secondary)
+            }
+            Button("Volver a la biblioteca") { p.selectPlaylist(nil) }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var libraryList: some View {
@@ -77,6 +182,23 @@ struct ContentView: View {
                                         }
                                         Button { p.addToQueue(t) } label: {
                                             Label("Añadir a la cola", systemImage: "text.badge.plus")
+                                        }
+                                        if !p.playlists.isEmpty {
+                                            Menu("Añadir a una lista") {
+                                                ForEach(p.playlists) { playlist in
+                                                    Button(playlist.name) {
+                                                        editPlaylist { try p.addToPlaylist(t, playlistID: playlist.id) }
+                                                    }
+                                                    .disabled(playlist.trackPaths.contains(t.id))
+                                                }
+                                            }
+                                        }
+                                        if p.activePlaylistID != nil {
+                                            Button {
+                                                editPlaylist { try p.removeFromActivePlaylist(path: t.id) }
+                                            } label: {
+                                                Label("Quitar de esta lista", systemImage: "minus.circle")
+                                            }
                                         }
                                         Divider()
                                         Button { NSWorkspace.shared.activateFileViewerSelecting([t.url]) } label: {

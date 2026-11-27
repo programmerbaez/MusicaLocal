@@ -7,6 +7,7 @@ build/
 settings.json
 library.json
 Artworks/
+Playlist/
 dist/
 /release/.zip/*.zip
 /release/.build.*/

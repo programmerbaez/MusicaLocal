@@ -27,6 +27,7 @@ Música Local reproduce una biblioteca de archivos locales con una interfaz Swif
 | Reproducción | Reproducir, pausar, avanzar, retroceder, buscar posición, volumen y silencio |
 | Biblioteca | Selección de carpeta, metadatos, carátulas, actualización y caché |
 | Cola | Orden automático, aleatorio, selección directa y resaltado de pista actual |
+| Listas de reproducción | Creación con nombre, edición de canciones y reproducción desde la lista seleccionada |
 | Interfaz | Reproductor principal, mini compacto y mini ampliado |
 | Apariencia | Tema del sistema, claro marfil y oscuro; fondo translúcido opcional |
 | Acento | Color de carátula, escala de grises y color del sistema cuando no hay imagen |
@@ -113,6 +114,14 @@ flowchart TD
 
 La configuración se edita posteriormente en **Música Local → Configuración**. La carpeta se administra en **Configuración → Caché**.
 
+### Listas de reproducción
+
+1. Pulsa **Nueva lista…** debajo de la barra superior y escribe un nombre.
+2. Vuelve a **Biblioteca** con el selector de listas. Haz clic secundario en una canción y elige **Añadir a una lista**.
+3. Abre la lista con el selector. Para retirar una canción, haz clic secundario y elige **Quitar de esta lista**. Para retirar una canción que ya no está en la biblioteca, usa **Canciones fuera de la biblioteca**.
+
+La selección determina qué canciones usa la reproducción automática. Las canciones añadidas manualmente a la cola conservan su prioridad.
+
 ## Arquitectura
 
 | Capa | Ruta | Propósito |
@@ -153,6 +162,7 @@ Ubicación predeterminada de datos de la aplicación:
 ~/Library/Application Support/MusicaLocal/
 ├── Artworks/        # Carátulas locales procesadas
 ├── library.json     # Biblioteca y metadatos
+├── Playlist/        # Un archivo Nombre de la lista.js por lista
 └── settings.json    # Preferencias persistentes
 ```
 
@@ -169,6 +179,8 @@ Ubicación predeterminada de datos de la aplicación:
 | `shortcuts` | Atajos configurados |
 
 Los ajustes se escriben de manera atómica; **borrar caché no está diseñado para borrar `settings.json`**. Antes de restablecer o cambiar carpetas importantes, conserva una copia de estos archivos.
+
+Los archivos `.js` de las listas contienen datos JSON con el nombre y las rutas de las canciones en orden. Se guardan al crear o editar una lista y se conservan al limpiar la caché.
 
 ## Touch Bar y el icono nativo de macOS
 

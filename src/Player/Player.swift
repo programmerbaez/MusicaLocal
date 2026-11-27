@@ -16,6 +16,12 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var sortKey: SortKey? = nil { didSet { rebuildVisible() } }
     @Published var ascending = true { didSet { rebuildVisible() } }
 
+    @Published private(set) var playlists = PlaylistStore.load()
+    @Published private(set) var activePlaylistID: Playlist.ID?
+    @Published private(set) var unavailablePlaylistPaths: [String] = []
+
+    var activePlaylist: Playlist? { playlists.first { $0.id == activePlaylistID } }
+
     @Published var selectedID: String?
     @Published private(set) var scrollRequest: ScrollRequest?
 
@@ -341,10 +347,58 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
 
+    // MARK: Listas de reproducción
+
+    func createPlaylist(named name: String) throws {
+        let playlist = try PlaylistStore.create(named: name)
+        playlists.append(playlist)
+        playlists.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        selectPlaylist(playlist.id)
+    }
+
+    func selectPlaylist(_ id: Playlist.ID?) {
+        guard activePlaylistID != id else { return }
+        activePlaylistID = id
+        selectedID = nil
+        shufflePlayed = nowPlaying.map { [$0.id] } ?? []
+        rebuildVisible(resetShuffle: true)
+    }
+
+    func addToPlaylist(_ track: Track, playlistID: Playlist.ID) throws {
+        guard let index = playlists.firstIndex(where: { $0.id == playlistID }),
+              !playlists[index].trackPaths.contains(track.id) else { return }
+        var playlist = playlists[index]
+        playlist.trackPaths.append(track.id)
+        try updatePlaylist(playlist, at: index)
+    }
+
+    func removeFromActivePlaylist(path: String) throws {
+        guard let index = playlists.firstIndex(where: { $0.id == activePlaylistID }) else { return }
+        var playlist = playlists[index]
+        playlist.trackPaths.removeAll { $0 == path }
+        try updatePlaylist(playlist, at: index)
+        if selectedID == path { selectedID = nil }
+    }
+
+    private func updatePlaylist(_ playlist: Playlist, at index: Int) throws {
+        try PlaylistStore.save(playlist)
+        playlists[index] = playlist
+        if playlist.id == activePlaylistID { rebuildVisible() }
+    }
+
     // MARK: Lista visible (filtro + orden)
 
-    private func rebuildVisible() {
+    private func rebuildVisible(resetShuffle: Bool = false) {
         var list = tracks
+        var unavailable: [String] = []
+        if let playlist = activePlaylist {
+            let paths = Set(playlist.trackPaths)
+            let matching = tracks.filter { paths.contains($0.id) }
+            let byID = Dictionary(matching.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            list = playlist.trackPaths.compactMap { byID[$0] }
+            unavailable = playlist.trackPaths.filter { byID[$0] == nil }
+        }
+        if unavailablePlaylistPaths != unavailable { unavailablePlaylistPaths = unavailable }
         let q = query.trimmingCharacters(in: .whitespaces)
         if !q.isEmpty {
             list = list.filter {
@@ -373,7 +427,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
         visible = list
         let ids = Set(list.map { $0.id })
-        if ids != shufflePlanIDs {
+        if resetShuffle || ids != shufflePlanIDs {
             rebuildShufflePlan()
         } else if shuffle && !shufflePlan.isEmpty {
             // Al cargar metadatos, conservar el orden previsto y actualizar su información.
@@ -677,7 +731,10 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             return
         }
 
-        guard !list.isEmpty else { return }
+        guard !list.isEmpty else {
+            if auto && activePlaylistID != nil { finishQueue() }
+            return
+        }
 
         if auto && repeatMode == .one, let cur = nowPlaying {
             play(cur, recordHistory: false)
@@ -722,11 +779,13 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
 
         if shuffle {
+            let candidates = activePlaylistID == nil ? tracks : list
             while let id = history.popLast() {
-                if let t = tracks.first(where: { $0.id == id }) {
+                if let t = candidates.first(where: { $0.id == id }) {
                     let forward = nowPlaying
                     play(t, recordHistory: false)
-                    if let forward = forward, forward.id != t.id {
+                    if let forward = forward, forward.id != t.id,
+                       activePlaylistID == nil || list.contains(forward) {
                         shufflePlan.removeAll { $0.id == forward.id }
                         shufflePlan.insert(forward, at: 0)
                     }
