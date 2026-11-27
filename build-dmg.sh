@@ -5,7 +5,7 @@ set -Eeuo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-APP="$ROOT/releases/app/MusicaLocal.app"
+APP="$ROOT/release/app/MusicaLocal.app"
 SWIFT_SRC="$ROOT/DMGBackground.swift"
 OUT="$ROOT/dist/MusicaLocal-1.0.dmg"
 VOLUME="Música Local 1.0"

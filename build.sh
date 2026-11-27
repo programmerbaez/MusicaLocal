@@ -5,7 +5,7 @@ set -Eeuo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 APP_NAME="MusicaLocal.app"
-RELEASE_DIR="$ROOT/releases"
+RELEASE_DIR="$ROOT/release"
 OUTPUT_DIR="$RELEASE_DIR/app"
 OUTPUT_APP="$OUTPUT_DIR/$APP_NAME"
 ZIP_DIR="$RELEASE_DIR/zip"

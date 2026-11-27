@@ -12,6 +12,5 @@ dist/
 /release/.zip/*.zip
 /release/.build.*/
 /release/.publish-lock/
+/release/zip/*.zip
 /releases/zip/*.zip
-/releases/.build.*/
-/releases/.publish-lock/

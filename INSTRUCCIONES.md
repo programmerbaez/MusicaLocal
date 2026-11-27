@@ -9,7 +9,7 @@ Coloca `build-dmg.sh` y `DMGBackground.swift` en la **raíz del proyecto**.
 La app compilada debe estar en:
 
 ```text
-releases/app/MusicaLocal.app
+release/app/MusicaLocal.app
 ```
 
 Ejecuta:

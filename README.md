@@ -78,7 +78,7 @@ xcode-select -p
 ```bash
 chmod +x build.sh
 ./build.sh
-open releases/app/MusicaLocal.app
+open release/app/MusicaLocal.app
 ```
 
 `build.sh` descubre automáticamente todos los archivos `*.swift` en `src/`, enlaza una aplicación nativa, incorpora iconos y recursos, y conserva la versión anterior del `.app` si falla el proceso.
@@ -94,7 +94,7 @@ open releases/app/MusicaLocal.app
 
 > Los porcentajes son hitos del script, no tiempos estimados ni avances continuos.
 
-El build publica la aplicación en `releases/app/MusicaLocal.app` y una copia comprimida en `releases/zip/MusicaLocal V1.0.0.zip`. Cada compilación exitosa reemplaza ambas salidas.
+El build publica la aplicación en `release/app/MusicaLocal.app` y una copia comprimida en `release/zip/MusicaLocal V1.0.0.zip`. Cada compilación exitosa reemplaza ambas salidas.
 
 ### Actualizaciones
 
@@ -206,9 +206,9 @@ La **Touch Bar / Control Strip** decide si muestra el icono de la aplicación y 
 Después de compilar en el Mac:
 
 ```bash
-/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' releases/app/MusicaLocal.app/Contents/Info.plist
-ls -lh releases/app/MusicaLocal.app/Contents/Resources/AppIcon.icns
-open releases/app/MusicaLocal.app
+/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' release/app/MusicaLocal.app/Contents/Info.plist
+ls -lh release/app/MusicaLocal.app/Contents/Resources/AppIcon.icns
+open release/app/MusicaLocal.app
 ```
 
 Debe aparecer `AppIcon.icns` en la primera comprobación. Si la Touch Bar conserva un icono antiguo, cierra la aplicación antes de reemplazar el paquete; el sistema puede mantener información previamente almacenada en caché. No reinicies ni modifiques procesos de la Touch Bar como requisito de esta actualización.
