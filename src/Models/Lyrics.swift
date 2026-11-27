@@ -4,6 +4,13 @@ struct Lyrics {
     struct Line {
         let time: Double
         let text: String
+
+        var isInstrumental: Bool {
+            switch text.lowercased() {
+            case "", "[instrumental]", "(instrumental)", "♪", "♫", "♬", "🎵", "🎶": return true
+            default: return false
+            }
+        }
     }
 
     let lines: [Line]
@@ -14,7 +21,7 @@ struct Lyrics {
         self.plainText = plainText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    var hasTiming: Bool { lines.contains { !$0.text.isEmpty } }
+    var hasTiming: Bool { !lines.isEmpty }
     var isEmpty: Bool { !hasTiming && plainText.isEmpty }
 
     func lineIndex(at position: Double) -> Int? {
@@ -56,6 +63,10 @@ struct Lyrics {
             let text = remaining.trimmingCharacters(in: .whitespaces)
             lines.append(contentsOf: times.map { Line(time: $0, text: text) })
         }
-        return lines.sorted { $0.time < $1.time }
+        lines.sort { $0.time < $1.time }
+        if let first = lines.first, first.time > 0 {
+            lines.insert(Line(time: 0, text: ""), at: 0)
+        }
+        return lines
     }
 }

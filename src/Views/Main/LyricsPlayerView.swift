@@ -2,6 +2,7 @@ import Combine
 import SwiftUI
 
 struct LyricsPlayerView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let track: Track
     let clock: PlaybackClock
     @ObservedObject var accent: AccentModel
@@ -28,6 +29,7 @@ struct LyricsPlayerView: View {
                 .frame(maxHeight: .infinity)
                 Divider()
                 lyricsPane
+                    .transition(.opacity)
             }
         }
         .background(LinearGradient(colors: [accent.shown.color.opacity(0.14), .clear],
@@ -53,7 +55,13 @@ struct LyricsPlayerView: View {
                     .padding(24)
                 }
             case .instrumental:
-                message("Pista instrumental")
+                VStack(spacing: 10) {
+                    Image(systemName: "music.note").font(.system(size: 36, weight: .medium))
+                        .foregroundColor(accent.shown.color)
+                        .accessibilityHidden(true)
+                    Text("Pista instrumental").foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .unavailable:
                 message("No se encontró la letra de esta canción.", retry: true)
             case .missingMetadata:
@@ -84,7 +92,9 @@ struct LyricsPlayerView: View {
             let duration = clock.duration > 0 ? clock.duration : track.duration
             let loaded = try await LyricsStore.shared.lyrics(for: track, duration: duration)
             try Task.checkCancellation()
-            result = loaded
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                result = loaded
+            }
         } catch {
             guard !Task.isCancelled else { return }
             self.error = (error as? LyricsStore.LookupError)?.localizedDescription
@@ -123,38 +133,41 @@ private struct SyncedLyricsView: View {
         }
     }
 
-    @ViewBuilder
     private func lyricRow(at index: Int) -> some View {
         let line = lyrics.lines[index]
-        if line.text.isEmpty {
-            Color.clear.frame(height: 8).accessibilityHidden(true)
-        } else {
-            let active = currentLine == index
-            Button {
-                seek(min(line.time, max(0, clock.duration)))
-            } label: {
-                Text(line.text)
-                    .font(.system(size: 23, weight: .semibold, design: .rounded))
-                    .foregroundColor(active ? .primary : .secondary)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(active ? accent.opacity(0.20) : .clear))
-                    .contentShape(Rectangle())
+        let active = currentLine == index
+        return Button {
+            seek(min(line.time, max(0, clock.duration)))
+        } label: {
+            Group {
+                if line.isInstrumental {
+                    Image(systemName: "music.note")
+                } else {
+                    Text(line.text)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityAddTraits(active ? .isSelected : [])
-            .help("Saltar a \(fmt(line.time))")
+            .font(.system(size: 23, weight: .semibold, design: .rounded))
+            .foregroundColor(.primary)
+            .opacity(active ? 1 : 0.57)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(RoundedRectangle(cornerRadius: 10).fill(accent).opacity(active ? 0.20 : 0))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(line.isInstrumental ? "Tramo instrumental" : line.text)
+        .accessibilityAddTraits(active ? .isSelected : [])
+        .help("Saltar a \(fmt(line.time))")
     }
 
     private func updateLine(for position: Double, proxy: ScrollViewProxy) {
         let index = lyrics.lineIndex(at: position)
         guard currentLine != index else { return }
-        currentLine = index
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.30)) {
+            currentLine = index
             proxy.scrollTo(index ?? -1, anchor: index == nil ? .top : .center)
         }
     }

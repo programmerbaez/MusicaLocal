@@ -127,6 +127,8 @@ La configuración se edita posteriormente en **Música Local → Configuración*
 
 Reproduce una canción y pulsa el botón de **Letras**, junto a **Cola**, para abrir la vista con carátula y letra. La línea activa se resalta y se desplaza con la reproducción. Haz clic en una línea para saltar a ese punto. Las letras disponibles sin marcas de tiempo se muestran como texto.
 
+La nota musical aparece antes del primer verso, en los tramos instrumentales indicados por las marcas de tiempo y en pistas identificadas como instrumentales. El resaltado y el desplazamiento respetan «Reducir movimiento» de macOS.
+
 Música Local busca primero un archivo `.lrc` con el mismo nombre que el audio, en la misma carpeta, y después una copia descargada. Si debe buscar en línea, solo lo hace mientras la vista está abierta y envía a [LRCLIB](https://lrclib.net/docs) el título, el artista y, cuando están disponibles, el álbum y la duración. Las letras descargadas quedan en `~/Library/Application Support/MusicaLocal/Lyrics/` y se pueden volver a leer sin conexión.
 
 ### Listas de reproducción
