@@ -20,9 +20,9 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HeaderBar(accent: accent)
-            Divider()
-            playlistBar
+            HeaderBar(accent: accent, onCreatePlaylist: beginPlaylistCreation) { path in
+                editPlaylist { try p.removeFromActivePlaylist(path: path) }
+            }
             Divider()
 
             if let playlist = p.activePlaylist,
@@ -60,44 +60,10 @@ struct ContentView: View {
         }
     }
 
-    private var playlistBar: some View {
-        HStack {
-            Menu {
-                Button("Biblioteca") { p.selectPlaylist(nil) }
-                if !p.playlists.isEmpty {
-                    Divider()
-                    ForEach(p.playlists) { playlist in
-                        Button(playlist.name) { p.selectPlaylist(playlist.id) }
-                    }
-                }
-            } label: {
-                Label(p.activePlaylist?.name ?? "Biblioteca", systemImage: "music.note.list")
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: 320, alignment: .leading)
-            .help("Elegir biblioteca o lista de reproducción")
-
-            Button {
-                playlistName = ""
-                creationError = nil
-                creatingPlaylist = true
-            } label: {
-                Label("Nueva lista…", systemImage: "plus")
-            }
-
-            if !p.unavailablePlaylistPaths.isEmpty {
-                Menu("Canciones fuera de la biblioteca") {
-                    ForEach(p.unavailablePlaylistPaths, id: \.self) { path in
-                        Button("Quitar \(path)") {
-                            editPlaylist { try p.removeFromActivePlaylist(path: path) }
-                        }
-                    }
-                }
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 6)
+    private func beginPlaylistCreation() {
+        playlistName = ""
+        creationError = nil
+        creatingPlaylist = true
     }
 
     private var playlistForm: some View {

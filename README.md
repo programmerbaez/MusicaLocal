@@ -124,7 +124,7 @@ La configuración se edita posteriormente en **Música Local → Configuración*
 
 ### Listas de reproducción
 
-1. Pulsa **Nueva lista…** debajo de la barra superior y escribe un nombre.
+1. Abre **Listas** junto al nombre de la carpeta, pulsa **Nueva lista…** y escribe un nombre.
 2. Vuelve a **Biblioteca** con el selector de listas. Haz clic secundario en una canción y elige **Añadir a una lista**.
 3. Abre la lista con el selector. Para retirar una canción, haz clic secundario y elige **Quitar de esta lista**. Para retirar una canción que ya no está en la biblioteca, usa **Canciones fuera de la biblioteca**.
 
