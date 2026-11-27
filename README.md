@@ -28,7 +28,7 @@ Música Local reproduce una biblioteca de archivos locales con una interfaz Swif
 | Biblioteca | Selección de carpeta, metadatos, carátulas, actualización y caché |
 | Cola | Orden automático, aleatorio, selección directa y resaltado de pista actual |
 | Listas de reproducción | Creación con nombre, edición de canciones y reproducción desde la lista seleccionada |
-| Interfaz | Reproductor principal, mini compacto y mini ampliado |
+| Interfaz | Reproductor principal, mini compacto y mini ampliado, con transiciones que respetan «Reducir movimiento» de macOS |
 | Apariencia | Tema del sistema, claro marfil y oscuro; fondo translúcido opcional |
 | Acento | Color de carátula, escala de grises y color del sistema cuando no hay imagen |
 | Audio | Motor original y `AVAudioEngine` experimental con perfiles de ecualización |

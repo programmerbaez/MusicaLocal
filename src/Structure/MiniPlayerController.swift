@@ -27,7 +27,8 @@ final class MiniPlayerController: NSObject, ObservableObject, NSWindowDelegate {
 
     private var panel: NSPanel?
     private weak var mainWindow: NSWindow?
-    private var returningToMain = false
+    private var windowSwitchID: UUID?
+    private var resizeSequence = 0
     private weak var player: Player?
     private weak var accent: AccentModel?
 
@@ -41,7 +42,7 @@ final class MiniPlayerController: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func show() {
-        guard let player = player, let accent = accent else { return }
+        guard windowSwitchID == nil, let player = player, let accent = accent else { return }
         if let existing = panel {
             NSApp.activate(ignoringOtherApps: true)
             if existing.isMiniaturized { existing.deminiaturize(nil) }
@@ -102,9 +103,9 @@ final class MiniPlayerController: NSObject, ObservableObject, NSWindowDelegate {
             win.center()
         }
         panel = win
-        mainWindow?.orderOut(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        win.makeKeyAndOrderFront(nil)
+        switchWindow(from: mainWindow, to: win) {
+            self.mainWindow?.orderOut(nil)
+        }
     }
 
     func toggle() {
@@ -116,31 +117,67 @@ final class MiniPlayerController: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func returnToMain() {
-        returningToMain = true
-        if let win = panel {
+        guard windowSwitchID == nil else { return }
+        guard let win = panel else {
+            focus(mainWindow ?? findMainWindow())
+            return
+        }
+        switchWindow(from: win, to: mainWindow ?? findMainWindow()) {
             win.delegate = nil
             win.close()
-            panel = nil
+            self.panel = nil
         }
-        restoreMain()
-        returningToMain = false
     }
 
-    private func restoreMain() {
-        let win = mainWindow ?? NSApp.windows.first(where: {
+    private func findMainWindow() -> NSWindow? {
+        NSApp.windows.first(where: {
             !($0 is NSPanel) && $0.title == "Música Local"
         })
-        if let win = win {
-            if win.isMiniaturized { win.deminiaturize(nil) }
-            NSApp.activate(ignoringOtherApps: true)
-            win.makeKeyAndOrderFront(nil)
+    }
+
+    private func focus(_ window: NSWindow?) {
+        guard let window = window else { return }
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    private func switchWindow(from outgoing: NSWindow?, to incoming: NSWindow?,
+                              finish: @escaping () -> Void) {
+        guard let outgoing = outgoing, let incoming = incoming,
+              outgoing.isVisible, !outgoing.isMiniaturized, !incoming.isMiniaturized,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
+            finish()
+            focus(incoming)
+            return
+        }
+
+        let id = UUID()
+        windowSwitchID = id
+        // La ventana entrante recibe las teclas desde el comienzo de la transición.
+        incoming.alphaValue = 0
+        focus(incoming)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.22
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            incoming.animator().alphaValue = 1
+            outgoing.animator().alphaValue = 0
+        } completionHandler: {
+            guard self.windowSwitchID == id else { return }
+            finish()
+            self.windowSwitchID = nil
+            outgoing.alphaValue = 1
+            incoming.alphaValue = 1
         }
     }
 
     func windowWillClose(_ notification: Notification) {
-        guard !returningToMain else { return }
+        guard let closing = notification.object as? NSWindow, closing === panel else { return }
+        windowSwitchID = nil
         panel = nil
-        restoreMain()
+        let window = mainWindow ?? findMainWindow()
+        window?.alphaValue = 1
+        focus(window)
     }
 
     private func updateSize(animated: Bool) {
@@ -152,9 +189,24 @@ final class MiniPlayerController: NSObject, ObservableObject, NSWindowDelegate {
         frame.size = size
         win.minSize = NSSize(width: 1, height: 1)
         win.maxSize = NSSize(width: 10000, height: 10000)
-        win.setFrame(frame, display: true, animate: animated)
-        win.minSize = size
-        win.maxSize = size
+        resizeSequence += 1
+        let sequence = resizeSequence
+        guard animated, win.isVisible, !win.isMiniaturized,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
+            win.setFrame(frame, display: true)
+            win.minSize = size
+            win.maxSize = size
+            return
+        }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.22
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            win.animator().setFrame(frame, display: true)
+        } completionHandler: {
+            guard self.panel === win, self.resizeSequence == sequence else { return }
+            win.minSize = size
+            win.maxSize = size
+        }
     }
 }
 

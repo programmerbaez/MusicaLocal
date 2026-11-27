@@ -21,6 +21,7 @@ struct MiniVisualEffect: NSViewRepresentable {
 
 struct MiniPlayerView: View {
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("visualizerStyle") private var visualizerStyleRaw = VisualizerStyle.bars.rawValue
     @ObservedObject var player: Player
     @ObservedObject var clock: PlaybackClock
@@ -58,7 +59,13 @@ struct MiniPlayerView: View {
             .frame(height: 25)
             .padding(.top, 5)
 
-            if controller.expanded { expandedBody } else { compactBody }
+            ZStack(alignment: .top) {
+                if controller.expanded {
+                    expandedBody.transition(.opacity)
+                } else {
+                    compactBody.transition(.opacity)
+                }
+            }
         }
         .foregroundColor(scheme == .light ? AppearancePalette.charcoal : .primary)
         .background(AppearanceSurface())
@@ -67,6 +74,7 @@ struct MiniPlayerView: View {
                     .stroke(Color.primary.opacity(0.12), lineWidth: 1))
         .padding(7)
         .symbolRenderingMode(.hierarchical)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: controller.expanded)
     }
 
     private var compactBody: some View {
