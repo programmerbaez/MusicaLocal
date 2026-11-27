@@ -1,4 +1,6 @@
-# Música Local — instalador DMG con fondo generado en Swift
+# Música Local — empaquetado DMG histórico
+
+Las nuevas versiones se distribuyen como ZIP. Consulta la sección de actualizaciones en [README.md](README.md) para el flujo de publicación vigente.
 
 ## Cómo instalar
 

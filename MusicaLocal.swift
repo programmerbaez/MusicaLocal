@@ -53,10 +53,10 @@ struct MusicaLocalApp: App {
                     (AppTheme(rawValue: new) ?? .system).apply(animated: true)
                 }
                 .alert(item: $updates.notice) { notice in
-                    if let url = notice.url, let action = notice.action {
+                    if let archive = notice.archive {
                         return Alert(
                             title: Text(notice.title), message: Text(notice.message),
-                            primaryButton: .default(Text(action)) { NSWorkspace.shared.open(url) },
+                            primaryButton: .default(Text("Descargar e instalar")) { updates.install(archive) },
                             secondaryButton: .cancel(Text("Más tarde"))
                         )
                     }
@@ -67,7 +67,8 @@ struct MusicaLocalApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("Acerca de Música Local") { AboutMusicaLocal.show() }
-                Button("Buscar actualizaciones…") { updates.check() }
+                Button(updates.installing ? "Instalando actualización…" : "Buscar actualizaciones…") { updates.check() }
+                    .disabled(updates.installing)
             }
             CommandGroup(replacing: .help) {
                 Button("Ayuda de Música Local") { HelpMusicaLocal.show() }

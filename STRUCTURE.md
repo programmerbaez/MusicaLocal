@@ -30,7 +30,8 @@ MusicaLocal_1.0/
 │   │   ├── PlaylistStore.swift
 │   │   ├── SettingsStore.swift
 │   │   ├── ShortcutManager.swift
-│   │   └── UpdateChecker.swift
+│   │   ├── UpdateChecker.swift
+│   │   └── UpdateInstaller.swift
 │   ├── Structure/
 │   │   ├── MiniPlayerController.swift
 │   │   └── WindowChrome.swift
@@ -69,7 +70,7 @@ MusicaLocal_1.0/
 └── TERMINOS_Y_CONDICIONES.md
 ```
 
-Al compilar se crean **`logs/`**, **`release/.app/MusicaLocal.app`** y **`release/.zip/MusicaLocal-v1.0.zip`** como salidas locales del build.
+Al compilar se crean **`logs/`**, **`release/.app/MusicaLocal.app`** y **`release/.zip/MusicaLocal V1.0.0.zip`** como salidas locales del build.
 
 ## 2. Responsabilidad de los módulos
 
@@ -89,7 +90,8 @@ Al compilar se crean **`logs/`**, **`release/.app/MusicaLocal.app`** y **`releas
 | `src/Services/PlaylistStore.swift` | Guarda y recupera las listas de reproducción como archivos `.js` con datos JSON |
 | `src/Services/SettingsStore.swift` | Lectura y guardado de settings.json |
 | `src/Services/ShortcutManager.swift` | Atajos configurables |
-| `src/Services/UpdateChecker.swift` | Consulta de la última publicación estable en GitHub y comparación con la versión del paquete |
+| `src/Services/UpdateChecker.swift` | Consulta GitHub, compara versiones y coordina el reinicio |
+| `src/Services/UpdateInstaller.swift` | Verifica y extrae el ZIP y reemplaza el paquete instalado |
 | `src/Structure/MiniPlayerController.swift` | Gestión del NSPanel compacto y ampliado |
 | `src/Structure/WindowChrome.swift` | Comportamiento y semáforos de ventanas |
 | `src/Support/AboutMusicaLocal.swift` | Ventana Acerca de y lector de documentos legales |

@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import AppKit
 
 struct ReleaseVersion: Comparable, CustomStringConvertible {
     private let components: [Int]
@@ -24,17 +25,20 @@ struct ReleaseVersion: Comparable, CustomStringConvertible {
         let displayed = components[2] == 0 ? Array(components.prefix(2)) : components
         return displayed.map(String.init).joined(separator: ".")
     }
+
+    var archiveVersion: String { components.map(String.init).joined(separator: ".") }
 }
 
 struct GitHubMusicRelease: Decodable {
     struct Asset: Decodable {
+        let name: String
         let browser_download_url: URL
         let state: String
+        let digest: String?
     }
 
     let tag_name: String
     let name: String?
-    let html_url: URL
     let draft: Bool
     let prerelease: Bool
     let assets: [Asset]
@@ -46,25 +50,23 @@ struct GitHubMusicRelease: Decodable {
         return ReleaseVersion(String(name.dropFirst("MusicaLocal ".count)))
     }
 
-    var releasePage: URL? {
-        trustedURL(html_url, prefix: "/programmerbaez/MusicaLocal/releases/tag/")
-    }
-
-    var installer: URL? {
-        let disks = assets.compactMap { asset -> URL? in
-            guard asset.state == "uploaded", asset.browser_download_url.pathExtension.lowercased() == "dmg"
-            else { return nil }
-            return trustedURL(asset.browser_download_url, prefix: "/programmerbaez/MusicaLocal/releases/download/")
+    func archive(for version: ReleaseVersion) -> UpdateInstaller.Archive? {
+        let prefix = "/programmerbaez/MusicaLocal/releases/download/"
+        let names = ["MusicaLocal V\(version.archiveVersion).zip", "MusicaLocal.V\(version.archiveVersion).zip",
+                     "MusicaLocal-v\(version.archiveVersion).zip",
+                     "MusicaLocal-v\(version).zip"]
+        for name in names {
+            guard let asset = assets.first(where: { $0.name == name && $0.state == "uploaded" }),
+                  let digest = asset.digest, digest.hasPrefix("sha256:"),
+                  digest.dropFirst(7).count == 64, digest.dropFirst(7).allSatisfy(\.isHexDigit)
+            else { continue }
+            let url = asset.browser_download_url
+            guard url.scheme == "https", url.host == "github.com", url.user == nil,
+                  url.password == nil, url.port == nil, url.path == prefix + tag_name + "/" + name
+            else { continue }
+            return UpdateInstaller.Archive(url: url, sha256: String(digest.dropFirst(7)).lowercased(), version: version)
         }
-        // Con varios instaladores, GitHub permite elegir la variante adecuada.
-        return disks.count == 1 ? disks.first : nil
-    }
-
-    private func trustedURL(_ url: URL, prefix: String) -> URL? {
-        guard url.scheme == "https", url.host == "github.com", url.user == nil,
-              url.password == nil, url.port == nil, url.path.hasPrefix(prefix)
-        else { return nil }
-        return url
+        return nil
     }
 }
 
@@ -74,11 +76,11 @@ final class UpdateChecker: ObservableObject {
         let id = UUID()
         let title: String
         let message: String
-        var url: URL? = nil
-        var action: String? = nil
+        var archive: UpdateInstaller.Archive? = nil
     }
 
     @Published var notice: Notice?
+    @Published private(set) var installing = false
     private var checkedAtLaunch = false
     private var checking = false
     private var reportResult = false
@@ -90,6 +92,7 @@ final class UpdateChecker: ObservableObject {
     }
 
     func check(manual: Bool = true) {
+        guard !installing else { return }
         reportResult = reportResult || manual
         guard !checking else { return }
         checking = true
@@ -127,21 +130,53 @@ final class UpdateChecker: ObservableObject {
         guard let installedText = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
               let installed = ReleaseVersion(installedText),
               !release.draft, !release.prerelease,
-              let latest = release.version, let page = release.releasePage else {
+              let latest = release.version else {
             report("No se pudo determinar la versión de la aplicación o de la publicación en GitHub.")
             return
         }
         if latest > installed {
-            let installer = release.installer
+            guard let archive = release.archive(for: latest) else {
+                notice = Notice(title: "Actualización sin instalador ZIP",
+                                message: "La versión \(latest) todavía no ofrece un ZIP verificable para la instalación automática.")
+                return
+            }
             notice = Notice(
                 title: "Actualización disponible",
-                message: "Puedes instalar Música Local \(latest). Tu versión actual es \(installedText).",
-                url: installer ?? page,
-                action: installer == nil ? "Ver en GitHub" : "Descargar instalador"
+                message: "Música Local descargará e instalará la versión \(latest) y se reiniciará.",
+                archive: archive
             )
         } else if reportResult {
             notice = Notice(title: "Música Local está al día", message: "Versión instalada \(installedText).")
         }
+    }
+
+    func install(_ archive: UpdateInstaller.Archive) {
+        guard !installing else { return }
+        installing = true
+        let destination = Bundle.main.bundleURL.resolvingSymlinksInPath()
+        Task { await performInstall(archive, at: destination) }
+    }
+
+    private func performInstall(_ archive: UpdateInstaller.Archive, at destination: URL) async {
+        do {
+            try await Task.detached {
+                try await UpdateInstaller.install(archive, at: destination)
+            }.value
+        } catch {
+            notice = Notice(title: "No se pudo instalar la actualización", message: error.localizedDescription)
+            installing = false
+            return
+        }
+        do {
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.createsNewApplicationInstance = true
+            _ = try await NSWorkspace.shared.openApplication(at: destination, configuration: configuration)
+            NSApp.terminate(nil)
+        } catch {
+            notice = Notice(title: "Actualización instalada",
+                            message: "Cierra Música Local y vuelve a abrirla para iniciar la versión nueva.")
+        }
+        installing = false
     }
 
     private func report(_ message: String) {

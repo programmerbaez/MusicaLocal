@@ -9,7 +9,9 @@ RELEASE_DIR="$ROOT/release"
 OUTPUT_DIR="$RELEASE_DIR/.app"
 OUTPUT_APP="$OUTPUT_DIR/$APP_NAME"
 ZIP_DIR="$RELEASE_DIR/.zip"
-ZIP_NAME="MusicaLocal-v1.0.zip"
+RELEASE_VERSION="1.0.0"
+APP_VERSION="${RELEASE_VERSION%.0}"
+ZIP_NAME="MusicaLocal V$RELEASE_VERSION.zip"
 OUTPUT_ZIP="$ZIP_DIR/$ZIP_NAME"
 PUBLISH_LOCK=""
 LOG_DIR="$ROOT/logs"
@@ -86,7 +88,7 @@ swiftc -parse-as-library -O -target "$TARGET" "${SOURCES[@]}" -o "$BIN" \
     2>&1 | tee -a "$LOG_FILE" "$HISTORY"
 step 85 "Compilación y enlace completados"
 
-cat > "$STAGED_APP/Contents/Info.plist" <<'PLIST'
+cat > "$STAGED_APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -99,7 +101,7 @@ cat > "$STAGED_APP/Contents/Info.plist" <<'PLIST'
   <key>LSApplicationCategoryType</key><string>public.app-category.music</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleVersion</key><string>1</string>
-  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundleShortVersionString</key><string>$APP_VERSION</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>CFBundleDevelopmentRegion</key><string>es</string>
   <key>CFBundleLocalizations</key><array><string>es</string></array>
@@ -145,10 +147,9 @@ plutil -lint "$STAGED_APP/Contents/Info.plist" 2>&1 | tee -a "$LOG_FILE" "$HISTO
 [[ -x "$BIN" ]] || { log '[ERROR] swiftc no produjo un ejecutable válido.'; false; }
 # Igual que la versión 1.0.0 original: firma ad hoc del paquete completo.
 # No crea ni configura controles de Touch Bar.
-if command -v codesign >/dev/null 2>&1; then
-    codesign --force --deep --sign - "$STAGED_APP" 2>/dev/null || true
-fi
-step 95 "Aplicación preparada y plist validado"
+codesign --force --deep --sign - "$STAGED_APP" 2>&1 | tee -a "$LOG_FILE" "$HISTORY"
+codesign --verify --deep --strict "$STAGED_APP" 2>&1 | tee -a "$LOG_FILE" "$HISTORY"
+step 95 "Aplicación, plist y firma validados"
 
 STAGED_ZIP="$TMP_DIR/$ZIP_NAME"
 ditto -c -k --sequesterRsrc --keepParent "$STAGED_APP" "$STAGED_ZIP"

@@ -94,15 +94,15 @@ open release/.app/MusicaLocal.app
 
 > Los porcentajes son hitos del script, no tiempos estimados ni avances continuos.
 
-El build publica la aplicación en `release/.app/MusicaLocal.app` y una copia comprimida en `release/.zip/MusicaLocal-v1.0.zip`. Cada compilación exitosa reemplaza ambas salidas.
+El build publica la aplicación en `release/.app/MusicaLocal.app` y una copia comprimida en `release/.zip/MusicaLocal V1.0.0.zip`. Cada compilación exitosa reemplaza ambas salidas.
 
 ### Actualizaciones
 
 Música Local consulta la última publicación estable de su repositorio de GitHub al iniciar, después de completar el asistente inicial. También puedes usar **Música Local → Buscar actualizaciones…**. La consulta solicita los datos de la publicación a GitHub y la aplicación compara su versión con la instalada.
 
-Si hay una versión más nueva, la app ofrece descargar el DMG oficial en el navegador. Cuando la publicación ofrece varias variantes o carece de DMG, abre la página de la publicación para que elijas el archivo. Instala la nueva versión desde el paquete descargado.
+Si hay una versión más nueva, pulsa **Descargar e instalar**. La app verifica la huella SHA-256 publicada por GitHub, extrae el ZIP y valida el paquete antes de reemplazar la copia actual. Luego intenta reiniciarse. La carpeta donde está instalada debe permitir escritura.
 
-Para publicar una actualización, fija la versión del paquete (`CFBundleShortVersionString`) y usa una etiqueta equivalente, por ejemplo `v1.1.0` para `1.1`. Adjunta el instalador a una publicación estable de GitHub.
+Para publicar una actualización, fija `RELEASE_VERSION` en `build.sh` y usa una etiqueta equivalente, por ejemplo `v1.1.0`. Adjunta el ZIP generado a la publicación estable de GitHub. El actualizador también reconoce el nombre anterior `MusicaLocal-v1.0.zip`.
 
 ## Flujo de uso
 
