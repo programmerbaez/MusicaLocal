@@ -5,8 +5,13 @@ set -Eeuo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 APP_NAME="MusicaLocal.app"
-OUTPUT_DIR="$ROOT/release/dmg"
+RELEASE_DIR="$ROOT/release"
+OUTPUT_DIR="$RELEASE_DIR/.app"
 OUTPUT_APP="$OUTPUT_DIR/$APP_NAME"
+ZIP_DIR="$RELEASE_DIR/.zip"
+ZIP_NAME="MusicaLocal-v1.0.zip"
+OUTPUT_ZIP="$ZIP_DIR/$ZIP_NAME"
+PUBLISH_LOCK=""
 LOG_DIR="$ROOT/logs"
 mkdir -p "$LOG_DIR"
 STAMP="$(date '+%Y%m%d-%H%M%S')"
@@ -26,6 +31,7 @@ step() {
     log "[$(printf '%3d' "$PERCENT")%] $2"
 }
 cleanup() {
+    if [[ -n "$PUBLISH_LOCK" ]]; then rmdir -- "$PUBLISH_LOCK"; fi
     if [[ -n "$TMP_DIR" && -d "$TMP_DIR" ]]; then rm -rf -- "$TMP_DIR"; fi
 }
 failed() {
@@ -33,7 +39,6 @@ failed() {
     trap - ERR
     log "[ERROR] Falló la compilación (exit $code; etapa $PERCENT%)."
     log "[ERROR] Registro: $LOG_FILE"
-    log "[ERROR] La versión anterior de $APP_NAME se mantiene intacta."
     exit "$code"
 }
 trap cleanup EXIT
@@ -51,6 +56,7 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
 fi
 command -v swiftc >/dev/null 2>&1 || { log '[ERROR] No se encontró swiftc. Instala las herramientas de línea de comandos: xcode-select --install'; false; }
 command -v plutil >/dev/null 2>&1 || { log '[ERROR] Falta plutil en el sistema.'; false; }
+command -v ditto >/dev/null 2>&1 || { log '[ERROR] Falta ditto en el sistema.'; false; }
 ARCH="$(uname -m)"
 case "$ARCH" in
     arm64|x86_64) ;;
@@ -67,7 +73,8 @@ while IFS= read -r -d '' file; do SOURCES+=("$file"); done < <(find "$ROOT/src" 
 step 20 "Fuentes encontradas: ${#SOURCES[@]} archivos Swift"
 
 # Se construye fuera de la aplicación publicada para no dañarla si swiftc falla.
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/musicalocal-build.XXXXXXXX")"
+mkdir -p "$OUTPUT_DIR" "$ZIP_DIR"
+TMP_DIR="$(mktemp -d "$RELEASE_DIR/.build.XXXXXXXX")"
 STAGED_APP="$TMP_DIR/$APP_NAME"
 BIN="$STAGED_APP/Contents/MacOS/MusicaLocal"
 mkdir -p "$(dirname "$BIN")"
@@ -143,17 +150,32 @@ if command -v codesign >/dev/null 2>&1; then
 fi
 step 95 "Aplicación preparada y plist validado"
 
-# Publicar únicamente si se completó todo. Restaurar si falla el reemplazo.
+STAGED_ZIP="$TMP_DIR/$ZIP_NAME"
+ditto -c -k --sequesterRsrc --keepParent "$STAGED_APP" "$STAGED_ZIP"
+[[ -s "$STAGED_ZIP" ]]
+
+# Serializar el reemplazo y conservar la app previa hasta publicar el ZIP.
+mkdir "$RELEASE_DIR/.publish-lock" || { log '[ERROR] Otra publicación está en curso.'; false; }
+PUBLISH_LOCK="$RELEASE_DIR/.publish-lock"
+[[ ! -d "$OUTPUT_ZIP" ]] || { log "[ERROR] La ruta del ZIP es un directorio: $OUTPUT_ZIP"; false; }
 OLD_APP="$TMP_DIR/old-$APP_NAME"
-mkdir -p "$OUTPUT_DIR"
 if [[ -e "$OUTPUT_APP" ]]; then mv "$OUTPUT_APP" "$OLD_APP"; fi
-if ! mv "$STAGED_APP" "$OUTPUT_APP"; then
-    if [[ -e "$OLD_APP" ]]; then mv "$OLD_APP" "$OUTPUT_APP"; fi
-    log '[ERROR] No se pudo publicar la aplicación; se restauró la versión previa.'
+if mv "$STAGED_APP" "$OUTPUT_APP"; then
+    if mv -f "$STAGED_ZIP" "$OUTPUT_ZIP"; then
+        step 100 "Compilación y empaquetado finalizados correctamente"
+    else
+        mv "$OUTPUT_APP" "$STAGED_APP" || { TMP_DIR=""; log "[ERROR] Respaldo de la app: $OLD_APP"; false; }
+    fi
+fi
+if [[ "$PERCENT" != 100 ]]; then
+    if [[ -e "$OLD_APP" ]]; then
+        mv "$OLD_APP" "$OUTPUT_APP" || { TMP_DIR=""; log "[ERROR] Respaldo de la app: $OLD_APP"; false; }
+    fi
+    log '[ERROR] No se pudo publicar la app y el ZIP.'
     false
 fi
-step 100 "Compilación finalizada correctamente"
 log "Salida: $OUTPUT_APP"
+log "ZIP: $OUTPUT_ZIP"
 log "Abrir: open \"$OUTPUT_APP\""
 log "Registro: $LOG_FILE"
 log "Fin: $(date '+%Y-%m-%d %H:%M:%S %z')"

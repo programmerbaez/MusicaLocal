@@ -67,7 +67,7 @@ MusicaLocal_1.0/
 └── TERMINOS_Y_CONDICIONES.md
 ```
 
-Al compilar se crean los directorios **`logs/`** y **`MusicaLocal.app/`**, que son productos de ejecución y no forman parte del árbol fuente anterior.
+Al compilar se crean **`logs/`**, **`release/.app/MusicaLocal.app`** y **`release/.zip/MusicaLocal-v1.0.zip`** como salidas locales del build.
 
 ## 2. Responsabilidad de los módulos
 

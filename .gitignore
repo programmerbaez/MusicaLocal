@@ -8,3 +8,6 @@ settings.json
 library.json
 Artworks/
 dist/
+/release/.zip/*.zip
+/release/.build.*/
+/release/.publish-lock/
