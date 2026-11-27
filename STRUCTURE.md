@@ -29,7 +29,8 @@ MusicaLocal_1.0/
 │   │   ├── NowPlayingBridge.swift
 │   │   ├── PlaylistStore.swift
 │   │   ├── SettingsStore.swift
-│   │   └── ShortcutManager.swift
+│   │   ├── ShortcutManager.swift
+│   │   └── UpdateChecker.swift
 │   ├── Structure/
 │   │   ├── MiniPlayerController.swift
 │   │   └── WindowChrome.swift
@@ -88,6 +89,7 @@ Al compilar se crean **`logs/`**, **`release/.app/MusicaLocal.app`** y **`releas
 | `src/Services/PlaylistStore.swift` | Guarda y recupera las listas de reproducción como archivos `.js` con datos JSON |
 | `src/Services/SettingsStore.swift` | Lectura y guardado de settings.json |
 | `src/Services/ShortcutManager.swift` | Atajos configurables |
+| `src/Services/UpdateChecker.swift` | Consulta de la última publicación estable en GitHub y comparación con la versión del paquete |
 | `src/Structure/MiniPlayerController.swift` | Gestión del NSPanel compacto y ampliado |
 | `src/Structure/WindowChrome.swift` | Comportamiento y semáforos de ventanas |
 | `src/Support/AboutMusicaLocal.swift` | Ventana Acerca de y lector de documentos legales |

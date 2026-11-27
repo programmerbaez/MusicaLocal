@@ -10,10 +10,12 @@ import QuartzCore
 // MARK: - App
 
 @main
+@MainActor
 struct MusicaLocalApp: App {
     @StateObject private var player = Player()
     @StateObject private var accent = AccentModel()
     @StateObject private var mini = MiniPlayerController()
+    @StateObject private var updates = UpdateChecker()
     @AppStorage("theme") private var themeRaw = AppTheme.system.rawValue
     @AppStorage("setupCompleted") private var setupCompleted = false
     @State private var showingSetup = false
@@ -29,12 +31,18 @@ struct MusicaLocalApp: App {
                     SpanishMenuLocalization.install()
                     mini.configure(player: player, accent: accent)
                     SettingsStore.shared.start(player: player)
-                    if !setupCompleted { showingSetup = true }
+                    if setupCompleted {
+                        updates.checkAutomatically()
+                    } else {
+                        showingSetup = true
+                    }
                     (AppTheme(rawValue: themeRaw) ?? .system).apply(animated: false)
                     let a = accent
                     player.onTrackChange = { [weak a] track in a?.trackChanged(track) }
                 }
-                .sheet(isPresented: $showingSetup) {
+                .sheet(isPresented: $showingSetup, onDismiss: {
+                    if setupCompleted { updates.checkAutomatically() }
+                }) {
                     InitialSetupView(player: player, accent: accent) {
                         setupCompleted = true
                         showingSetup = false
@@ -44,10 +52,22 @@ struct MusicaLocalApp: App {
                 .onChange(of: themeRaw) { new in
                     (AppTheme(rawValue: new) ?? .system).apply(animated: true)
                 }
+                .alert(item: $updates.notice) { notice in
+                    if let url = notice.url, let action = notice.action {
+                        return Alert(
+                            title: Text(notice.title), message: Text(notice.message),
+                            primaryButton: .default(Text(action)) { NSWorkspace.shared.open(url) },
+                            secondaryButton: .cancel(Text("Más tarde"))
+                        )
+                    }
+                    return Alert(title: Text(notice.title), message: Text(notice.message),
+                                 dismissButton: .default(Text("Aceptar")))
+                }
         }
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("Acerca de Música Local") { AboutMusicaLocal.show() }
+                Button("Buscar actualizaciones…") { updates.check() }
             }
             CommandGroup(replacing: .help) {
                 Button("Ayuda de Música Local") { HelpMusicaLocal.show() }
