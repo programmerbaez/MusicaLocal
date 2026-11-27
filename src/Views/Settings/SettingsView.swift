@@ -55,6 +55,7 @@ struct SettingsView: View {
     @Environment(\.colorScheme) private var scheme
     @EnvironmentObject var p: Player
     @EnvironmentObject var accent: AccentModel
+    @EnvironmentObject private var lyricsSync: LyricsSync
     @ObservedObject private var shortcuts = ShortcutManager.shared
 
     @AppStorage("translucentBackground") private var translucentBackground = true
@@ -322,7 +323,7 @@ struct SettingsView: View {
     private var cacheTab: some View {
         // Evita la superficie opaca del NSScrollView de Monterey, que
         // oscurecía la cabecera de esta pestaña respecto de las demás.
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             Toggle(isOn: $cacheEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Guardar caché de la biblioteca").font(.headline)
@@ -363,10 +364,15 @@ struct SettingsView: View {
 
             Divider()
 
-            infoRow("Carpeta recordada", info.folder ?? "Ninguna", "folder.fill")
-            infoRow("Canciones en caché", "\(info.tracks)", "music.note.list")
-            infoRow("Metadatos (library.json)", info.librarySize, "doc.text")
-            infoRow("Miniaturas de carátulas", info.artworkSize, "photo.on.rectangle")
+            VStack(alignment: .leading, spacing: 10) {
+                infoRow("Carpeta recordada", info.folder ?? "Ninguna", "folder.fill")
+                infoRow("Canciones en caché", "\(info.tracks)", "music.note.list")
+                infoRow("Metadatos (library.json)", info.librarySize, "doc.text")
+                infoRow("Miniaturas de carátulas", info.artworkSize, "photo.on.rectangle")
+            }
+
+            Divider()
+            lyricsSyncSection
 
             Spacer()
 
@@ -400,6 +406,38 @@ struct SettingsView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var lyricsSyncSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Letras sin conexión").font(.headline)
+                Spacer()
+                if lyricsSync.isRunning {
+                    Button("Cancelar") { lyricsSync.cancel() }
+                } else {
+                    Button {
+                        lyricsSync.start(p.tracks)
+                    } label: {
+                        Label("Sincronizar letras", systemImage: "arrow.down.circle")
+                    }
+                    .disabled(p.tracks.isEmpty || p.isScanning)
+                }
+            }
+            if let progress = lyricsSync.progress {
+                if lyricsSync.isRunning {
+                    ProgressView(value: Double(progress.checked), total: Double(progress.total))
+                }
+                Text("\(progress.checked) de \(progress.total) revisadas · \(progress.available) con letra sin conexión")
+                    .font(.caption).foregroundColor(.secondary)
+                if let completion = lyricsSync.completion {
+                    Text(completion).font(.caption).foregroundColor(.secondary)
+                }
+            } else {
+                Text("Busca letras de tu biblioteca en LRCLIB para verlas sin internet.")
+                    .font(.caption).foregroundColor(.secondary)
+            }
+        }
     }
 
     private func infoRow(_ label: String, _ value: String, _ icon: String) -> some View {

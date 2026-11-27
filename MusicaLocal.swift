@@ -16,6 +16,7 @@ struct MusicaLocalApp: App {
     @StateObject private var accent = AccentModel()
     @StateObject private var mini = MiniPlayerController()
     @StateObject private var updates = UpdateChecker()
+    @StateObject private var lyricsSync = LyricsSync()
     @AppStorage("theme") private var themeRaw = AppTheme.system.rawValue
     @AppStorage("setupCompleted") private var setupCompleted = false
     @State private var showingSetup = false
@@ -111,6 +112,7 @@ struct MusicaLocalApp: App {
             SettingsView()
                 .environmentObject(player)
                 .environmentObject(accent)
+                .environmentObject(lyricsSync)
         }
     }
 }

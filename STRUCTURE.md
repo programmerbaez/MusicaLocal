@@ -28,6 +28,7 @@ MusicaLocal_1.0.1/
 │   │   ├── FilenameParser.swift
 │   │   ├── LibraryCache.swift
 │   │   ├── LyricsStore.swift
+│   │   ├── LyricsSync.swift
 │   │   ├── NowPlayingBridge.swift
 │   │   ├── PlaylistStore.swift
 │   │   ├── SettingsStore.swift
@@ -90,7 +91,8 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 | `src/Services/AudioEnhancementEngine.swift` | AVAudioEngine y perfiles experimentales de ecualización |
 | `src/Services/FilenameParser.swift` | Extracción de datos desde nombres de archivos |
 | `src/Services/LibraryCache.swift` | Cache de biblioteca y directorio de datos |
-| `src/Services/LyricsStore.swift` | Archivos LRC locales, consulta de LRCLIB y almacenamiento de letras descargadas |
+| `src/Services/LyricsStore.swift` | Archivos LRC locales, consulta de LRCLIB y almacenamiento de letras descargadas como datos JSON en archivos `.js` |
+| `src/Services/LyricsSync.swift` | Sincronización por lotes, progreso y cancelación desde Ajustes |
 | `src/Services/NowPlayingBridge.swift` | Integración de información multimedia y comandos remotos macOS |
 | `src/Services/PlaylistStore.swift` | Guarda y recupera las listas de reproducción como archivos `.js` con datos JSON |
 | `src/Services/SettingsStore.swift` | Lectura y guardado de settings.json |

@@ -33,8 +33,10 @@ actor LyricsStore {
 
     private let directory = CacheStore.directory.appendingPathComponent("Lyrics", isDirectory: true)
     private var retryAfter = Date.distantPast
+    private var requesting = false
 
-    func lyrics(for track: Track, duration: Double) async throws -> Result {
+    func lyrics(for track: Track, duration: Double, requireOfflineCopy: Bool = false) async throws -> Result {
+        try Task.checkCancellation()
         let local = track.url.deletingPathExtension().appendingPathExtension("lrc")
         if let source = try? String(contentsOf: local) {
             let lyrics = Lyrics(lrc: source)
@@ -44,9 +46,12 @@ actor LyricsStore {
         let signature = [track.id, String(track.mtime), track.title, track.artist, track.album]
             .joined(separator: "\u{0}")
         let key = SHA256.hash(data: Data(signature.utf8)).map { String(format: "%02x", $0) }.joined()
-        let cached = directory.appendingPathComponent(key).appendingPathExtension("json")
-        if let data = try? Data(contentsOf: cached),
-           let record = try? JSONDecoder().decode(Record.self, from: data) {
+        let cached = directory.appendingPathComponent(key).appendingPathExtension("js")
+        if let record = readRecord(at: cached) {
+            return record.result
+        }
+        if let record = readRecord(at: cached.deletingPathExtension().appendingPathExtension("json")) {
+            try persist(record, at: cached, required: requireOfflineCopy)
             return record.result
         }
 
@@ -54,9 +59,16 @@ actor LyricsStore {
         let artist = track.artist.trimmingCharacters(in: .whitespacesAndNewlines)
         let album = track.album.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty, !artist.isEmpty else { return .missingMetadata }
-        // Evita iniciar una consulta nueva por cada pulsación rápida de «Siguiente».
-        try await Task.sleep(nanoseconds: 250_000_000)
+        // Las descargas de biblioteca dejan margen para las consultas interactivas.
+        try await Task.sleep(nanoseconds: requireOfflineCopy ? 800_000_000 : 250_000_000)
+        while requesting {
+            try await Task.sleep(nanoseconds: 250_000_000)
+        }
+        try Task.checkCancellation()
+        if let record = readRecord(at: cached) { return record.result }
         guard Date() >= retryAfter else { throw LookupError.rateLimited }
+        requesting = true
+        defer { requesting = false }
 
         var url = URLComponents()
         url.scheme = "https"
@@ -82,8 +94,7 @@ actor LyricsStore {
             else { throw LookupError.service }
             let result = record.result
             if case .unavailable = result { return result }
-            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            if let encoded = try? JSONEncoder().encode(record) { try? encoded.write(to: cached, options: .atomic) }
+            try persist(record, at: cached, required: requireOfflineCopy)
             return result
         case 404:
             return .unavailable
@@ -94,6 +105,20 @@ actor LyricsStore {
             throw LookupError.rateLimited
         default:
             throw LookupError.service
+        }
+    }
+
+    private func readRecord(at url: URL) -> Record? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(Record.self, from: data)
+    }
+
+    private func persist(_ record: Record, at url: URL, required: Bool) throws {
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try JSONEncoder().encode(record).write(to: url, options: .atomic)
+        } catch {
+            if required { throw error }
         }
     }
 }
