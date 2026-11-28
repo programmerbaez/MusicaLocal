@@ -1,6 +1,6 @@
 // Música Local — fondo del instalador generado con AppKit.
 // El diseño se dibuja a partir de rutas y texto, sin imágenes externas.
-// Uso: ./DMGBackground <ancho> <alto> <salida.png> [escala]
+// Uso: ./DMGBackground <ancho> <alto> <salida.png> [escala] [versión]
 // <ancho> y <alto> están en PUNTOS (lo que Finder muestra). Con escala 2 el PNG
 // tiene el doble de píxeles y metadatos de 144 dpi, para pantallas Retina.
 import AppKit
@@ -76,7 +76,7 @@ func palm(origin: NSPoint, angle: CGFloat, length: CGFloat, flip: CGFloat, opaci
     NSGraphicsContext.restoreGraphicsState()
 }
 
-func draw(width w: CGFloat, height h: CGFloat) {
+func draw(width w: CGFloat, height h: CGFloat, version: String) {
     canvasWidth = w
     let rect = NSRect(x: 0, y: 0, width: w, height: h)
     let base = NSBezierPath(rect: rect)
@@ -110,13 +110,13 @@ func draw(width w: CGFloat, height h: CGFloat) {
     color(125, 139, 96, 0.36).setStroke()
     line.stroke()
 
-    textCentered("Versión 1.0  ·  macOS", centerX: w/2, baselineY: h*0.085,
+    textCentered("Versión \(version)  ·  macOS", centerX: w/2, baselineY: h*0.085,
                  size: min(14, w*0.019), foreground: color(99, 112, 79))
 }
 
 let args = CommandLine.arguments
-if args.count != 4 && args.count != 5 {
-    fputs("Uso: DMGBackground <ancho> <alto> <salida.png> [escala 1-4]\n", stderr)
+if !(4...6).contains(args.count) {
+    fputs("Uso: DMGBackground <ancho> <alto> <salida.png> [escala 1-4] [versión]\n", stderr)
     exit(2)
 }
 guard let wi = Int(args[1]), let hi = Int(args[2]),
@@ -124,7 +124,7 @@ guard let wi = Int(args[1]), let hi = Int(args[2]),
     fputs("Dimensiones inválidas; utiliza ancho 600–1800 y alto 360–1000.\n", stderr)
     exit(2)
 }
-let scale = args.count == 5 ? (Int(args[4]) ?? 0) : 1
+let scale = args.count >= 5 ? (Int(args[4]) ?? 0) : 1
 guard (1...4).contains(scale) else {
     fputs("Escala inválida; utiliza un entero de 1 a 4.\n", stderr)
     exit(2)
@@ -148,7 +148,7 @@ context.imageInterpolation = .high
 context.shouldAntialias = true
 // Se dibuja en puntos; el contexto escala a píxeles reales.
 context.cgContext.scaleBy(x: CGFloat(scale), y: CGFloat(scale))
-draw(width: w, height: h)
+draw(width: w, height: h, version: args.count == 6 ? args[5] : "1.0")
 context.flushGraphics()
 NSGraphicsContext.restoreGraphicsState()
 

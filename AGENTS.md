@@ -5,7 +5,7 @@
 
 ## 1. Misión y contexto
 
-**Música Local 1.0.1** es un reproductor nativo de música local para macOS, gratuito, de código abierto y distribuido bajo **MIT**. Desarrollador: **Andrés Báez**. La interfaz actual está en **español**; en futuras versiones se prevé internacionalización.
+**Música Local 1.0.2** es un reproductor nativo de música local para macOS, gratuito, de código abierto y distribuido bajo **MIT**. Desarrollador: **Andrés Báez**. La interfaz actual está en **español**; en futuras versiones se prevé internacionalización.
 
 Objetivos del proyecto:
 
@@ -158,7 +158,7 @@ flowchart TD
 - Asistente inicial: bienvenida, términos/acuerdos, importar configuración o crear nueva, apariencia, atajos, audio, visualizador, carpeta musical y finalización.
 - Mantén el historial de preferencias y su restauración sin obligar al usuario a repetir el asistente.
 - Ayuda, Acerca de y lector legal deben abrirse **dentro de la aplicación** y mostrarse correctamente en español; los documentos `.md` siguen siendo recursos del bundle.
-- El panel Acerca de debe decir **«Versión 1.0.1»**, sin el número de compilación, y atribuir el desarrollo a **Andrés Báez**.
+- El panel Acerca de debe decir **«Versión 1.0.2»**, sin el número de compilación, y atribuir el desarrollo a **Andrés Báez**.
 
 ## 6. Persistencia: contratos de datos
 
@@ -203,7 +203,7 @@ Ruta habitual:
   - `CFBundleIdentifier = com.local.musicalocal`
   - `CFBundleIconFile = AppIcon` (macOS resuelve `AppIcon.icns`)
   - `CFBundleName` y `CFBundleDisplayName = Música Local`
-  - `CFBundleShortVersionString = 1.0.1`
+  - `CFBundleShortVersionString = 1.0.2`
   - `LSMinimumSystemVersion = 12.0`
   - `LSApplicationCategoryType = public.app-category.music`
   - desarrollo/localización en español.
@@ -289,7 +289,7 @@ swiftc -frontend -parse MusicaLocal.swift $(find src -type f -name '*.swift')
 - [ ] Visualizadores: los cinco estilos, apagado, ubicación y consumo de recursos.
 - [ ] Audio experimental: activación/desactivación, cuatro perfiles y respaldo al motor original.
 - [ ] Configuración: secciones, iconos y textos con acento, guardado y restauración en `settings.json`.
-- [ ] Ayuda, Acerca de (solo «Versión 1.0.1»), lector legal y menús en español.
+- [ ] Ayuda, Acerca de (solo «Versión 1.0.2»), lector legal y menús en español.
 - [ ] Touch Bar A1707: no se congela al entrar/salir de la app o alternar ventanas; icono nativo reconocido.
 - [ ] Build y `.app`: `Info.plist`, identificador, `.icns`, firma ad hoc y recursos de español.
 - [ ] DMG (si aplica): ventana legible, acceso a Aplicaciones e instalación funcional.
@@ -322,4 +322,4 @@ Un cambio se considera listo para entrega **solo si**:
 5. No borra datos de usuario ni introduce archivos privados al repositorio.
 6. Registra claramente qué se comprobó y qué queda pendiente en hardware macOS.
 
-**Prioridad:** estabilidad de Música Local 1.0.1 > compatibilidad de Monterey > preservar la experiencia existente > mejoras opcionales > refactorizaciones estéticas.
+**Prioridad:** estabilidad de Música Local 1.0.2 > compatibilidad de Monterey > preservar la experiencia existente > mejoras opcionales > refactorizaciones estéticas.

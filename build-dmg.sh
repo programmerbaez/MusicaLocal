@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DMG Música Local 1.0 — fondo Retina (1x + 2x) generado desde Swift, sin Homebrew.
+# DMG Música Local — fondo Retina (1x + 2x) generado desde Swift, sin Homebrew.
 # Pensado para macOS 12 (Monterey).
 set -Eeuo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,8 +7,6 @@ cd "$ROOT"
 
 APP="$ROOT/release/app/MusicaLocal.app"
 SWIFT_SRC="$ROOT/DMGBackground.swift"
-OUT="$ROOT/dist/MusicaLocal-1.0.dmg"
-VOLUME="Música Local 1.0"
 
 # ── Geometría (todo en PUNTOS, no en píxeles) ───────────────────────────────
 WINDOW_WIDTH=760        # ancho del área de contenido = ancho del fondo
@@ -34,6 +32,11 @@ ICON_Y=$((CONTENT_HEIGHT * ICON_Y_PERCENT / 100))
 for c in swiftc hdiutil osascript ditto tiffutil sips; do
   command -v "$c" >/dev/null || { echo "ERROR: No se encontró $c"; exit 1; }
 done
+
+VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
+[[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]] || { echo 'ERROR: Versión inválida en la aplicación.'; exit 1; }
+OUT="$ROOT/dist/MusicaLocal-$VERSION.dmg"
+VOLUME="Música Local $VERSION"
 
 mkdir -p "$ROOT/dist"
 TMP="$(mktemp -d "${TMPDIR:-/tmp/}musicalocal-dmg.XXXXXXXX")"
@@ -61,8 +64,8 @@ trap cleanup EXIT
 # ── 1. Fondo @1x y @2x → un único TIFF multirresolución ─────────────────────
 echo '[1/6] Dibujando fondo (1x y 2x) con Swift/AppKit...'
 swiftc -O "$SWIFT_SRC" -o "$TMP/DMGBackground"
-"$TMP/DMGBackground" "$WINDOW_WIDTH" "$CONTENT_HEIGHT" "$TMP/bg.png"    1
-"$TMP/DMGBackground" "$WINDOW_WIDTH" "$CONTENT_HEIGHT" "$TMP/bg@2x.png" 2
+"$TMP/DMGBackground" "$WINDOW_WIDTH" "$CONTENT_HEIGHT" "$TMP/bg.png"    1 "$VERSION"
+"$TMP/DMGBackground" "$WINDOW_WIDTH" "$CONTENT_HEIGHT" "$TMP/bg@2x.png" 2 "$VERSION"
 
 # Finder elige solo la representación correcta (1x o 2x) según la pantalla.
 # Con un PNG único de 760x450 a 72 dpi, en Retina se ampliaba x2 → borroso.
@@ -161,7 +164,7 @@ DEVICE=""
 
 # ── 6. Imagen final comprimida ───────────────────────────────────────────────
 echo '[6/6] Comprimiendo imagen final...'
-FINAL="$TMP/MusicaLocal-1.0.dmg"
+FINAL="$TMP/MusicaLocal-$VERSION.dmg"
 hdiutil convert "$RAW" -format UDZO -imagekey zlib-level=9 -o "$FINAL" >/dev/null
 mv -f "$FINAL" "$OUT"
 echo "Instalador generado: $OUT"
