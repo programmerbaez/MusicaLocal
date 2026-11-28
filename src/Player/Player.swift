@@ -10,11 +10,30 @@ import QuartzCore
 // MARK: - Reproductor
 
 final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
-    @Published var tracks: [Track] = [] { didSet { rebuildVisible() } }
+    @Published var tracks: [Track] = [] {
+        didSet {
+            guard !tracks.elementsEqual(oldValue, by: Self.sameTrackContent) else { return }
+            if tracks.isEmpty {
+                searchKeys.removeAll()
+            } else if !searchKeys.isEmpty && !tracks.elementsEqual(oldValue, by: { $0.id == $1.id }) {
+                let ids = Set(tracks.map(\.id))
+                searchKeys = searchKeys.filter { ids.contains($0.key) }
+            }
+            rebuildVisible()
+        }
+    }
     @Published private(set) var visible: [Track] = []
-    @Published var query = "" { didSet { rebuildVisible() } }
-    @Published var sortKey: SortKey? = nil { didSet { rebuildVisible() } }
-    @Published var ascending = true { didSet { rebuildVisible() } }
+    @Published var query = "" {
+        didSet { if oldValue != query { scheduleSearch() } }
+    }
+    @Published private(set) var sortKey: SortKey?
+    @Published private(set) var ascending = true
+
+    private var pendingSearch: DispatchWorkItem?
+    private var appliedQuery = ""
+    private var searchLocale = Locale.current
+    private var searchKeys: [String: SearchKey] = [:]
+    private var sortedCandidates: [Track] = []
 
     @Published private(set) var playlists = PlaylistStore.load()
     @Published private(set) var activePlaylistID: Playlist.ID?
@@ -421,13 +440,88 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     private func updatePlaylist(_ playlist: Playlist, at index: Int) throws {
         try PlaylistStore.save(playlist)
+        let pathsChanged = playlists[index].trackPaths != playlist.trackPaths
         playlists[index] = playlist
-        if playlist.id == activePlaylistID { rebuildVisible() }
+        if pathsChanged && playlist.id == activePlaylistID { rebuildVisible() }
     }
 
     // MARK: Lista visible (filtro + orden)
 
-    private func rebuildVisible(resetShuffle: Bool = false) {
+    private struct SearchText {
+        let original: String
+        let normalized: String?
+
+        init(_ text: String, locale: Locale) {
+            original = text
+            // Una búsqueda literal sobre texto plegado puede encontrar solo parte de un
+            // carácter expandido (por ejemplo, «s» en «ß»). Conservamos la comparación
+            // localizada de Foundation cuando la cadena sale del ASCII imprimible.
+            normalized = text.utf8.allSatisfy { (32...126).contains($0) }
+                ? text.folding(options: .caseInsensitive, locale: locale) : nil
+        }
+
+        func contains(_ query: SearchText) -> Bool {
+            if let normalized = normalized, let needle = query.normalized {
+                return normalized.range(of: needle, options: .literal) != nil
+            }
+            return original.localizedCaseInsensitiveContains(query.original)
+        }
+    }
+
+    private struct SearchKey {
+        let title: SearchText
+        let artist: SearchText
+        let album: SearchText
+
+        init(_ track: Track, locale: Locale) {
+            title = SearchText(track.title, locale: locale)
+            artist = SearchText(track.artist, locale: locale)
+            album = SearchText(track.album, locale: locale)
+        }
+
+        func describes(_ track: Track) -> Bool {
+            title.original == track.title && artist.original == track.artist && album.original == track.album
+        }
+
+        func contains(_ query: SearchText) -> Bool {
+            title.contains(query) || artist.contains(query) || album.contains(query)
+        }
+    }
+
+    private static func sameTrackContent(_ a: Track, _ b: Track) -> Bool {
+        // Track.== compara solo la identidad. Las filas también dependen de sus metadatos.
+        a.id == b.id && a.title == b.title && a.artist == b.artist && a.album == b.album
+            && a.duration == b.duration && a.mtime == b.mtime && a.loaded == b.loaded
+    }
+
+    private func scheduleSearch() {
+        pendingSearch?.cancel()
+        pendingSearch = nil
+        let text = query.trimmingCharacters(in: .whitespaces)
+        if text.isEmpty {
+            applySearch(text)
+            return
+        }
+        let work = DispatchWorkItem { [weak self] in
+            self?.pendingSearch = nil
+            self?.applySearch(text)
+        }
+        pendingSearch = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(200), execute: work)
+    }
+
+    private func applySearch(_ text: String) {
+        let locale = Locale.current
+        let previous = SearchText(appliedQuery, locale: locale)
+        let next = SearchText(text, locale: locale)
+        let sameQuery = text == appliedQuery
+            || (next.normalized != nil && next.normalized == previous.normalized)
+        appliedQuery = text
+        guard locale != searchLocale || !sameQuery else { return }
+        rebuildVisible(refreshCandidates: false)
+    }
+
+    private func refreshSortedCandidates() {
         var list = tracks
         var unavailable: [String] = []
         if let playlist = activePlaylist {
@@ -438,14 +532,6 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             unavailable = playlist.trackPaths.filter { byID[$0] == nil }
         }
         if unavailablePlaylistPaths != unavailable { unavailablePlaylistPaths = unavailable }
-        let q = query.trimmingCharacters(in: .whitespaces)
-        if !q.isEmpty {
-            list = list.filter {
-                $0.title.localizedCaseInsensitiveContains(q)
-                || $0.artist.localizedCaseInsensitiveContains(q)
-                || $0.album.localizedCaseInsensitiveContains(q)
-            }
-        }
         if let key = sortKey {
             let asc = ascending
             list.sort { a, b in
@@ -464,6 +550,30 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 return asc ? r == .orderedAscending : r == .orderedDescending
             }
         }
+        sortedCandidates = list
+    }
+
+    private func rebuildVisible(resetShuffle: Bool = false, refreshCandidates: Bool = true) {
+        if refreshCandidates { refreshSortedCandidates() }
+        let locale = Locale.current
+        if searchLocale != locale {
+            searchKeys.removeAll()
+            searchLocale = locale
+        }
+        let query = SearchText(appliedQuery, locale: locale)
+        let list = appliedQuery.isEmpty ? sortedCandidates : sortedCandidates.filter { track in
+            if let key = searchKeys[track.id], key.describes(track) {
+                return key.contains(query)
+            }
+            let key = SearchKey(track, locale: locale)
+            searchKeys[track.id] = key
+            return key.contains(query)
+        }
+
+        guard !list.elementsEqual(visible, by: Self.sameTrackContent) else {
+            if resetShuffle { rebuildShufflePlan() }
+            return
+        }
         visible = list
         let ids = Set(list.map { $0.id })
         if resetShuffle || ids != shufflePlanIDs {
@@ -471,7 +581,10 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         } else if shuffle && !shufflePlan.isEmpty {
             // Al cargar metadatos, conservar el orden previsto y actualizar su información.
             let byID = Dictionary(uniqueKeysWithValues: list.map { ($0.id, $0) })
-            shufflePlan = shufflePlan.compactMap { byID[$0.id] }
+            let updatedPlan = shufflePlan.compactMap { byID[$0.id] }
+            if !updatedPlan.elementsEqual(shufflePlan, by: Self.sameTrackContent) {
+                shufflePlan = updatedPlan
+            }
         }
     }
 
@@ -482,6 +595,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             sortKey = key
             ascending = true
         }
+        rebuildVisible()
     }
 
     // MARK: Selección y desplazamiento
