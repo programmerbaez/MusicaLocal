@@ -9,7 +9,7 @@ RELEASE_DIR="$ROOT/release"
 OUTPUT_DIR="$RELEASE_DIR/app"
 OUTPUT_APP="$OUTPUT_DIR/$APP_NAME"
 ZIP_DIR="$RELEASE_DIR/zip"
-RELEASE_VERSION="1.0.2"
+RELEASE_VERSION="1.0.3"
 APP_VERSION="${RELEASE_VERSION%.0}"
 ZIP_NAME="MusicaLocal V$RELEASE_VERSION.zip"
 OUTPUT_ZIP="$ZIP_DIR/$ZIP_NAME"
@@ -100,7 +100,7 @@ cat > "$STAGED_APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.music</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleVersion</key><string>3</string>
+  <key>CFBundleVersion</key><string>4</string>
   <key>CFBundleShortVersionString</key><string>$APP_VERSION</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>CFBundleDevelopmentRegion</key><string>es</string>

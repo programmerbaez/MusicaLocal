@@ -247,7 +247,8 @@ actor OnlineMusicIdentification: MusicIdentifying {
         if start > now { try await Task.sleep(nanoseconds: start - now) }
         try Task.checkCancellation()
         var request = original
-        request.setValue("MusicaLocal/1.0.2 (macOS metadata editor; https://github.com/programmerbaez/MusicaLocal)", forHTTPHeaderField: "User-Agent")
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.3"
+        request.setValue("MusicaLocal/\(version) (macOS metadata editor; https://github.com/programmerbaez/MusicaLocal)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 18
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForResource = 30

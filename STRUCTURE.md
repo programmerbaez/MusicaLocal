@@ -1,11 +1,11 @@
-# STRUCTURE — Música Local 1.0.2
+# STRUCTURE — Música Local 1.0.3
 
 > Inventario de los archivos incluidos en esta entrega, generado a partir del árbol real. Compatibilidad objetivo: macOS 12+; implementación nativa SwiftUI / AppKit / AVFoundation.
 
 ## 1. Árbol de directorios
 
 ```text
-MusicaLocal_1.0.2/
+MusicaLocal_1.0.3/
 ├── assets/
 │   └── AppIcon.png
 ├── resources/
@@ -83,7 +83,7 @@ MusicaLocal_1.0.2/
 └── TERMINOS_Y_CONDICIONES.md
 ```
 
-Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release/zip/MusicaLocal V1.0.2.zip`** como salidas locales del build.
+Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release/zip/MusicaLocal V1.0.3.zip`** como salidas locales del build.
 
 ## 2. Responsabilidad de los módulos
 
