@@ -11,6 +11,7 @@ struct LyricsPlayerView: View {
     let position: () -> Double
     let seek: (Double) -> Void
     @AppStorage("lyricsAnimate") private var animate = true
+    @AppStorage("lyricsScrollMetadata") private var scrollMetadata = false
 
     @State private var result: LyricsStore.Result?
     @State private var error: String?
@@ -18,14 +19,18 @@ struct LyricsPlayerView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let coverSize = min(218, geometry.size.width * 0.26, geometry.size.height * 0.55)
+            let coverSize = max(1, min(218, geometry.size.width * 0.26, geometry.size.height * 0.55))
             HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 12) {
-                    ArtworkView(url: track.url, size: max(1, coverSize), large: true, corner: 16)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(track.title).font(.title2.weight(.semibold)).lineLimit(2)
+                VStack(spacing: 12) {
+                    ArtworkView(url: track.url, size: coverSize, large: true, corner: 16)
+                    VStack(spacing: 4) {
+                        LyricsMetadataLabel(value: track.title, width: coverSize, scrolls: scrollMetadata)
+                            .font(.title2.weight(.semibold))
+                            .id(track.title)
                         if !track.artist.isEmpty {
-                            Text(track.artist).foregroundColor(.secondary).lineLimit(1)
+                            LyricsMetadataLabel(value: track.artist, width: coverSize, scrolls: scrollMetadata)
+                                .foregroundColor(.secondary)
+                                .id(track.artist)
                         }
                     }
                 }
@@ -107,6 +112,69 @@ struct LyricsPlayerView: View {
     }
 }
 
+private struct LyricsMetadataLabel: View {
+    let value: String
+    let width: CGFloat
+    let scrolls: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var textWidth: CGFloat = 0
+    @State private var scrollStart = Date()
+
+    var body: some View {
+        let label = Text(value.split(whereSeparator: \.isNewline).joined(separator: " ")).lineLimit(1)
+        let overflow = textWidth - width
+        let canScroll = scrolls && !reduceMotion
+        label
+            .truncationMode(.tail)
+            .frame(width: width)
+            .opacity(canScroll && overflow > 0 ? 0 : 1)
+            .overlay(alignment: .leading) {
+                if canScroll {
+                    label.fixedSize()
+                        .hidden()
+                        .background(GeometryReader { geometry in
+                            Color.clear.preference(key: LyricsMetadataWidth.self, value: geometry.size.width)
+                        })
+                }
+            }
+            .overlay(alignment: .leading) {
+                if canScroll && overflow > 0 {
+                    TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
+                        let elapsed = context.date.timeIntervalSince(scrollStart)
+                        label.fixedSize()
+                            .offset(x: -scrollOffset(overflow: overflow, elapsed: elapsed))
+                    }
+                    .fixedSize()
+                    .onAppear { scrollStart = Date() }
+                    .onChange(of: overflow) { _ in scrollStart = Date() }
+                }
+            }
+            .clipped()
+            .onPreferenceChange(LyricsMetadataWidth.self) { textWidth = $0 }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(value)
+            .help(value)
+    }
+
+    private func scrollOffset(overflow: CGFloat, elapsed: TimeInterval) -> CGFloat {
+        let travel = Double(overflow) / 32
+        let pause: TimeInterval = 1.5
+        let leg = travel + pause
+        let phase = max(0, elapsed).truncatingRemainder(dividingBy: 2 * leg)
+        let progress = min(1, max(0, (phase.truncatingRemainder(dividingBy: leg) - pause) / travel))
+        return overflow * CGFloat(phase < leg ? progress : 1 - progress)
+    }
+}
+
+private struct LyricsMetadataWidth: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 private struct SyncedLyricsView: View {
     let lyrics: Lyrics
     let trackID: String
@@ -120,6 +188,7 @@ private struct SyncedLyricsView: View {
     @AppStorage("lyricsFollow") private var follow = true
     @AppStorage("lyricsAnimate") private var animate = true
     @AppStorage("lyricsWords") private var showWords = true
+    @AppStorage("lyricsActiveTextAccent") private var useTextAccent = true
     @AppStorage("lyricsSuspendOnScroll") private var suspendOnScroll = true
     @AppStorage("lyricsOffsets") private var offsets = Data()
 
@@ -238,7 +307,7 @@ private struct SyncedLyricsView: View {
         let target = min(max(0, line.time + Double(steps) / 4), max(0, clock.duration))
         return LyricRow(line: line, active: active, past: index < (currentLine ?? 0),
                         showWords: active && showWords, currentWord: active ? currentWord : nil,
-                        wordStep: active ? wordStep : 0, target: target, accent: accent, seek: seek)
+                        wordStep: active ? wordStep : 0, target: target, accent: accent, useTextAccent: useTextAccent, seek: seek)
     }
 
     private func updateHighlight() {
@@ -277,12 +346,15 @@ private struct LyricRow: View, Equatable {
     let wordStep: Int
     let target: Double
     let accent: Color
+    let useTextAccent: Bool
     let seek: (Double) -> Void
+
+    private var activeTextColor: Color { useTextAccent ? accent : .primary }
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.active == rhs.active && lhs.past == rhs.past && lhs.showWords == rhs.showWords
             && lhs.currentWord == rhs.currentWord && lhs.wordStep == rhs.wordStep && lhs.target == rhs.target
-            && lhs.accent == rhs.accent && lhs.line == rhs.line
+            && lhs.accent == rhs.accent && lhs.useTextAccent == rhs.useTextAccent && lhs.line == rhs.line
     }
 
     var body: some View {
@@ -297,7 +369,7 @@ private struct LyricRow: View, Equatable {
                 }
             }
             .font(.system(size: 23, weight: .semibold, design: .rounded))
-            .foregroundColor(active ? accent : .secondary)
+            .foregroundColor(active ? activeTextColor : .secondary)
             .opacity(past ? 0.65 : 1)
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
@@ -318,8 +390,8 @@ private struct LyricRow: View, Equatable {
         let sung = line.words.prefix(index).map(\.text).joined()
         let upcoming = line.words.dropFirst(index + 1).map(\.text).joined()
         return Text(line.prefix).foregroundColor(.secondary)
-            + Text(sung).foregroundColor(accent)
-            + Text(line.words[index].text).foregroundColor(accent.opacity(0.73 + Double(wordStep) * 0.0675))
+            + Text(sung).foregroundColor(activeTextColor)
+            + Text(line.words[index].text).foregroundColor(activeTextColor.opacity(0.73 + Double(wordStep) * 0.0675))
             + Text(upcoming).foregroundColor(.secondary)
     }
 

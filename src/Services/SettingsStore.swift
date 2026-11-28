@@ -17,6 +17,8 @@ struct MusicSettings: Codable {
     var lyricsAnimate: Bool?
     var lyricsWords: Bool?
     var lyricsSuspendOnScroll: Bool?
+    var lyricsScrollMetadata: Bool?
+    var lyricsActiveTextAccent: Bool?
     var lyricsOffsets: [String: Int]?
 
     static func current(folder: String?) -> MusicSettings {
@@ -38,6 +40,8 @@ struct MusicSettings: Codable {
             lyricsAnimate: ud.object(forKey: "lyricsAnimate") as? Bool ?? true,
             lyricsWords: ud.object(forKey: "lyricsWords") as? Bool ?? true,
             lyricsSuspendOnScroll: ud.object(forKey: "lyricsSuspendOnScroll") as? Bool ?? true,
+            lyricsScrollMetadata: ud.bool(forKey: "lyricsScrollMetadata"),
+            lyricsActiveTextAccent: ud.object(forKey: "lyricsActiveTextAccent") as? Bool ?? true,
             lyricsOffsets: ud.data(forKey: "lyricsOffsets").map(LyricsOffsets.decode) ?? [:])
     }
 
@@ -55,6 +59,8 @@ struct MusicSettings: Codable {
         if let lyricsAnimate = lyricsAnimate { ud.set(lyricsAnimate, forKey: "lyricsAnimate") }
         if let lyricsWords = lyricsWords { ud.set(lyricsWords, forKey: "lyricsWords") }
         if let lyricsSuspendOnScroll = lyricsSuspendOnScroll { ud.set(lyricsSuspendOnScroll, forKey: "lyricsSuspendOnScroll") }
+        if let lyricsScrollMetadata = lyricsScrollMetadata { ud.set(lyricsScrollMetadata, forKey: "lyricsScrollMetadata") }
+        if let lyricsActiveTextAccent = lyricsActiveTextAccent { ud.set(lyricsActiveTextAccent, forKey: "lyricsActiveTextAccent") }
         if let lyricsOffsets = lyricsOffsets, let data = try? JSONEncoder().encode(lyricsOffsets) {
             ud.set(data, forKey: "lyricsOffsets")
         }

@@ -68,6 +68,8 @@ struct SettingsView: View {
     @AppStorage("lyricsAnimate") private var lyricsAnimate = true
     @AppStorage("lyricsWords") private var lyricsWords = true
     @AppStorage("lyricsSuspendOnScroll") private var lyricsSuspendOnScroll = true
+    @AppStorage("lyricsScrollMetadata") private var lyricsScrollMetadata = false
+    @AppStorage("lyricsActiveTextAccent") private var lyricsActiveTextAccent = true
     @AppStorage("lyricsOffsets") private var lyricsOffsets = Data()
     @State private var info = CacheInfo.current()
 
@@ -421,6 +423,12 @@ struct SettingsView: View {
             Toggle("Seguir automáticamente la línea actual", isOn: $lyricsFollow)
             Toggle("Animar el desplazamiento", isOn: $lyricsAnimate)
             Toggle("Resaltar palabras con marcas de tiempo", isOn: $lyricsWords)
+            Toggle("Usar el color de acento en el texto activo", isOn: $lyricsActiveTextAccent)
+            Picker("Título y artista largos", selection: $lyricsScrollMetadata) {
+                Text("Puntos suspensivos (…)").tag(false)
+                Text("Desplazamiento automático").tag(true)
+            }
+            .pickerStyle(.menu)
             Toggle("Suspender el seguimiento al desplazar manualmente", isOn: $lyricsSuspendOnScroll)
             if let track = p.nowPlaying {
                 Button("Restablecer el desfase de la canción actual") {

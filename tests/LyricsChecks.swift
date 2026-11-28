@@ -92,6 +92,14 @@ private struct LyricsChecks {
         let old = #"{"version":1,"theme":"system","accentMode":"artwork","translucent":true,"visualizer":"bars","cacheEnabled":true,"audioEnabled":false,"audioProfile":"balanced","shortcuts":{}}"#
         let settings = try JSONDecoder().decode(MusicSettings.self, from: Data(old.utf8))
         expect(settings.lyricsFollow == nil && settings.lyricsOffsets == nil, "Configuración anterior")
+        expect(settings.lyricsScrollMetadata == nil && settings.lyricsActiveTextAccent == nil,
+               "Preferencias de presentación ausentes en una configuración anterior")
+        var updated = settings
+        updated.lyricsScrollMetadata = true
+        updated.lyricsActiveTextAccent = false
+        let roundTrip = try JSONDecoder().decode(MusicSettings.self, from: JSONEncoder().encode(updated))
+        expect(roundTrip.lyricsScrollMetadata == true && roundTrip.lyricsActiveTextAccent == false,
+               "Preferencias de presentación conservadas al exportar e importar")
         let one = LyricsOffsets.updating(Data(), trackID: "A", steps: -2)
         let two = LyricsOffsets.updating(one, trackID: "B", steps: 3)
         let reset = LyricsOffsets.updating(two, trackID: "A", steps: 0)

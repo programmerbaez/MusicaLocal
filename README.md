@@ -127,11 +127,11 @@ La configuración se edita posteriormente en **Música Local → Configuración*
 
 ### Letras sincronizadas
 
-Reproduce una canción y pulsa **Letras**, junto a **Cola**, para abrir la vista con carátula y letra. La línea activa usa el acento de la carátula. Puedes desplazarte para leer otras líneas y pulsar **Volver a la línea actual** para retomar el seguimiento. Haz clic en una línea sincronizada para saltar a su posición.
+Reproduce una canción y pulsa **Letras**, junto a **Cola**, para abrir la vista con carátula y letra. La carátula se centra en su columna, con el título y el artista alineados debajo. El texto de la línea activa usa el color de acento por defecto. Puedes desplazarte para leer otras líneas y pulsar **Volver a la línea actual** para retomar el seguimiento. Haz clic en una línea sincronizada para saltar a su posición.
 
 La app usa marcas por palabra o segmento cuando están presentes en un LRC extendido o en los bloques Lyricsfile compatibles que entrega LRCLIB. Con marcas LRC tradicionales el resaltado es por línea. Las letras sin marcas se muestran como texto. La nota musical señala el comienzo instrumental, las líneas instrumentales explícitas y los intervalos con final de línea explícito.
 
-Usa **−** para mostrar la letra antes o **+** para mostrarla después, en pasos de **0,25 s**. El botón de restablecer devuelve el desfase a cero. El ajuste se guarda por canción en `settings.json` y conserva el archivo fuente. En **Configuración → Letras** puedes cambiar el seguimiento, las animaciones, el resaltado por palabra y la suspensión al desplazar manualmente. «Reducir movimiento» desactiva las animaciones.
+Usa **−** para mostrar la letra antes o **+** para mostrarla después, en pasos de **0,25 s**. El botón de restablecer devuelve el desfase a cero. El ajuste se guarda por canción en `settings.json` y conserva el archivo fuente. En **Configuración → Letras** puedes cambiar el seguimiento, las animaciones, el resaltado por palabra y la suspensión al desplazar manualmente. También puedes mostrar títulos y artistas largos con puntos suspensivos o desplazamiento automático, y desactivar el acento del texto activo. «Reducir movimiento» desactiva las animaciones y muestra los metadatos largos con puntos suspensivos.
 
 Música Local busca primero un archivo `.lrc` junto a la pista, luego una copia descargada. Si necesita buscar en línea, envía a [LRCLIB](https://lrclib.net/docs) el título, el artista y, cuando están disponibles, el álbum y la duración. La búsqueda alternativa comprueba artista y duración antes de aceptar otras versiones. Las búsquedas sin resultados se conservan durante seis horas. **Volver a buscar** permite consultar de nuevo.
 
