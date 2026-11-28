@@ -27,7 +27,7 @@ Música Local reproduce una biblioteca de archivos locales con una interfaz Swif
 | Reproducción | Reproducir, pausar, avanzar, retroceder, buscar posición, volumen y silencio |
 | Biblioteca | Selección de carpeta, metadatos, carátulas, actualización y caché |
 | Cola | Orden automático, aleatorio, selección directa y resaltado de pista actual |
-| Letras | Vista de reproducción con carátula, letra y seguimiento por línea en el reproductor principal |
+| Letras | Vista de reproducción con carátula, letra y seguimiento por línea o palabra en el reproductor principal |
 | Listas de reproducción | Creación con nombre, edición de canciones y reproducción desde la lista seleccionada |
 | Interfaz | Reproductor principal, mini compacto y mini ampliado, con transiciones que respetan «Reducir movimiento» de macOS |
 | Apariencia | Tema del sistema, claro marfil y oscuro; fondo translúcido opcional |
@@ -125,15 +125,23 @@ La configuración se edita posteriormente en **Música Local → Configuración*
 
 ### Letras sincronizadas
 
-Reproduce una canción y pulsa el botón de **Letras**, junto a **Cola**, para abrir la vista con carátula y letra. La línea activa se resalta y se desplaza con la reproducción. Haz clic en una línea para saltar a ese punto. Las letras disponibles sin marcas de tiempo se muestran como texto.
+Reproduce una canción y pulsa **Letras**, junto a **Cola**, para abrir la vista con carátula y letra. La línea activa usa el acento de la carátula. Puedes desplazarte para leer otras líneas y pulsar **Volver a la línea actual** para retomar el seguimiento. Haz clic en una línea sincronizada para saltar a su posición.
 
-La nota musical aparece antes del primer verso, en los tramos instrumentales indicados por las marcas de tiempo y en pistas identificadas como instrumentales. El resaltado y el desplazamiento respetan «Reducir movimiento» de macOS.
+La app usa marcas por palabra o segmento cuando están presentes en un LRC extendido o en los bloques Lyricsfile compatibles que entrega LRCLIB. Con marcas LRC tradicionales el resaltado es por línea. Las letras sin marcas se muestran como texto. La nota musical señala el comienzo instrumental, las líneas instrumentales explícitas y los intervalos con final de línea explícito.
 
-Música Local busca primero un archivo `.lrc` con el mismo nombre que el audio, en la misma carpeta, y después una copia descargada. Si necesita buscar en línea, envía a [LRCLIB](https://lrclib.net/docs) el título, el artista y, cuando están disponibles, el álbum y la duración.
+Usa **−** para mostrar la letra antes o **+** para mostrarla después, en pasos de **0,25 s**. El botón de restablecer devuelve el desfase a cero. El ajuste se guarda por canción en `settings.json` y conserva el archivo fuente. En **Configuración → Letras** puedes cambiar el seguimiento, las animaciones, el resaltado por palabra y la suspensión al desplazar manualmente. «Reducir movimiento» desactiva las animaciones.
 
-Para preparar toda la biblioteca, espera a que termine el escaneo y pulsa **Configuración → Caché → Sincronizar letras**. Puedes cancelar en cualquier momento y conservar lo que ya se descargó. Al volver a sincronizar, la app reutiliza las letras que ya están disponibles sin conexión.
+Música Local busca primero un archivo `.lrc` junto a la pista, luego una copia descargada. Si necesita buscar en línea, envía a [LRCLIB](https://lrclib.net/docs) el título, el artista y, cuando están disponibles, el álbum y la duración. La búsqueda alternativa comprueba artista y duración antes de aceptar otras versiones. Las búsquedas sin resultados se conservan durante seis horas. **Volver a buscar** permite consultar de nuevo.
 
-Las descargas se guardan como archivos `.js` con datos JSON en `~/Library/Application Support/MusicaLocal/Lyrics/`. Las copias previas en `.json` se reconocen y se convierten a `.js` al volver a usarlas. Borrar la caché de la biblioteca conserva las letras descargadas.
+Para preparar toda la biblioteca, espera a que termine el escaneo y pulsa **Configuración → Caché → Sincronizar letras**. Puedes cancelar y continuar con el mismo botón. Las letras ya guardadas se reutilizan. El progreso indica cuántas pistas se revisaron, cuántas tienen letra y cuántas quedan pendientes o fallaron. El servicio realiza consultas secuenciales y respeta la espera indicada por LRCLIB.
+
+Las descargas se guardan como datos JSON en archivos `.js` dentro de `~/Library/Application Support/MusicaLocal/Lyrics/`. Las copias anteriores con extensión `.json` se convierten al volver a usarlas. Borrar la caché de la biblioteca conserva las letras descargadas.
+
+#### Verificar la sincronización
+
+En macOS, ejecuta `bash tests/check-lyrics.sh` para comprobar marcas conocidas, letras sin tiempos, desfases, pausas musicales, caché y respuestas HTTP simuladas. Las pruebas usan un directorio temporal y un servicio simulado.
+
+Para la comprobación visual en Monterey, usa una canción con un LRC local que tenga marcas conocidas por línea y otra con marcas por palabra. Pausa a mitad de palabra, reanuda, salta hacia adelante y atrás y cambia de canción varias veces. Repite con el motor original y el experimental. Desplaza la letra sin pulsar una línea y comprueba que solo se suspende el centrado. Vuelve a la línea actual, prueba ambos signos del desfase y reabre la app para verificar su persistencia. Alterna entre ambos mini reproductores y la ventana principal, minimiza la ventana y repite con «Reducir movimiento» activado.
 
 ### Listas de reproducción
 

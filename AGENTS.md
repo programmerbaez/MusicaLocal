@@ -145,9 +145,15 @@ flowchart TD
 - El código actual visualiza **amplitud/nivel del audio**, no un espectro FFT real ni bandas de frecuencia. **No lo describas como análisis espectral real** sin implementar y verificar dicho análisis.
 - Desactivado debe ocultar el visualizador y no dejar un hueco innecesario.
 
+### Letras sincronizadas
+
+- Conserva la prioridad de los archivos LRC locales y sus contenidos originales. Una letra con marcas por línea se resalta por línea. El resaltado por palabra requiere marcas de palabra o de segmento.
+- Usa la posición del motor para la vista de letras, con el seguimiento del desplazamiento independiente del resaltado. Respeta «Reducir movimiento» y conserva el desfase de cada canción en las preferencias.
+- La sincronización masiva debe ser cancelable, reutilizar copias guardadas y respetar `Retry-After`. Las pruebas sintéticas se ejecutan con `bash tests/check-lyrics.sh`.
+
 ### Ajustes y primera ejecución
 
-- Secciones: Apariencia, Atajos, Audio, Visualizador y Caché.
+- Secciones: Apariencia, Atajos, Audio, Visualizador, Letras y Caché.
 - La selección/cambio de carpeta de música está en **Configuración → Caché**.
 - Asistente inicial: bienvenida, términos/acuerdos, importar configuración o crear nueva, apariencia, atajos, audio, visualizador, carpeta musical y finalización.
 - Mantén el historial de preferencias y su restauración sin obligar al usuario a repetir el asistente.

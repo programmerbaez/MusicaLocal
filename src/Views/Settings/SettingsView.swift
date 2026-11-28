@@ -29,7 +29,7 @@ struct CacheInfo {
 }
 
 private enum SettingsTab: String, CaseIterable, Identifiable {
-    case appearance, shortcuts, audio, visualizer, cache
+    case appearance, shortcuts, audio, visualizer, lyrics, cache
     var id: String { rawValue }
     var label: String {
         switch self {
@@ -37,6 +37,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
         case .shortcuts: return "Atajos"
         case .audio: return "Audio"
         case .visualizer: return "Visualizador"
+        case .lyrics: return "Letras"
         case .cache: return "Caché"
         }
     }
@@ -46,6 +47,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
         case .shortcuts: return "command"
         case .audio: return "waveform"
         case .visualizer: return "waveform.path"
+        case .lyrics: return "music.note.list"
         case .cache: return "internaldrive"
         }
     }
@@ -62,6 +64,11 @@ struct SettingsView: View {
     @AppStorage("theme") private var themeRaw = AppTheme.system.rawValue
     @AppStorage("cacheEnabled") private var cacheEnabled = true
     @AppStorage("visualizerStyle") private var visualizerStyleRaw = VisualizerStyle.bars.rawValue
+    @AppStorage("lyricsFollow") private var lyricsFollow = true
+    @AppStorage("lyricsAnimate") private var lyricsAnimate = true
+    @AppStorage("lyricsWords") private var lyricsWords = true
+    @AppStorage("lyricsSuspendOnScroll") private var lyricsSuspendOnScroll = true
+    @AppStorage("lyricsOffsets") private var lyricsOffsets = Data()
     @State private var info = CacheInfo.current()
 
     @State private var selectedTab: SettingsTab = .appearance
@@ -97,6 +104,7 @@ struct SettingsView: View {
                 case .shortcuts: shortcutsTab
                 case .audio: audioTab
                 case .visualizer: visualizerTab
+                case .lyrics: lyricsTab
                 case .cache: cacheTab
                 }
             }
@@ -408,6 +416,24 @@ struct SettingsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    private var lyricsTab: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Toggle("Seguir automáticamente la línea actual", isOn: $lyricsFollow)
+            Toggle("Animar el desplazamiento", isOn: $lyricsAnimate)
+            Toggle("Resaltar palabras con marcas de tiempo", isOn: $lyricsWords)
+            Toggle("Suspender el seguimiento al desplazar manualmente", isOn: $lyricsSuspendOnScroll)
+            if let track = p.nowPlaying {
+                Button("Restablecer el desfase de la canción actual") {
+                    lyricsOffsets = LyricsOffsets.updating(lyricsOffsets, trackID: track.id, steps: 0)
+                }
+                .disabled(LyricsOffsets.steps(in: lyricsOffsets, trackID: track.id) == 0)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var lyricsSyncSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -428,7 +454,7 @@ struct SettingsView: View {
                 if lyricsSync.isRunning {
                     ProgressView(value: Double(progress.checked), total: Double(progress.total))
                 }
-                Text("\(progress.checked) de \(progress.total) revisadas · \(progress.available) con letra sin conexión")
+                Text("\(progress.checked) de \(progress.total) revisadas · \(progress.available) con letra · \(progress.pending) pendientes · \(progress.failed) fallidas")
                     .font(.caption).foregroundColor(.secondary)
                 if let completion = lyricsSync.completion {
                     Text(completion).font(.caption).foregroundColor(.secondary)

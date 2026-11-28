@@ -27,7 +27,8 @@ struct ContentView: View {
             Divider()
 
             if showingLyrics, let track = p.nowPlaying {
-                LyricsPlayerView(track: track, clock: p.clock, accent: accent) { p.seek($0) }
+                LyricsPlayerView(track: track, clock: p.clock, accent: accent, isPlaying: p.isPlaying,
+                                 position: { p.currentPosition }, seek: p.seek)
                     .id(track.id)
             } else if let playlist = p.activePlaylist,
                playlist.trackPaths.count == p.unavailablePlaylistPaths.count {

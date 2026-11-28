@@ -17,6 +17,7 @@ MusicaLocal_1.0.1/
 │   │   ├── AccentModel.swift
 │   │   ├── ColumnLayout.swift
 │   │   ├── Lyrics.swift
+│   │   ├── LyricsfileTiming.swift
 │   │   ├── PlaybackModels.swift
 │   │   └── Track.swift
 │   ├── Player/
@@ -83,7 +84,8 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 |---|---|
 | `src/Models/AccentModel.swift` | Selección cromática según carátula y respaldo del sistema |
 | `src/Models/ColumnLayout.swift` | Disposición de columnas en la biblioteca |
-| `src/Models/Lyrics.swift` | Lectura de marcas LRC y selección de línea por tiempo |
+| `src/Models/Lyrics.swift` | LRC tradicional y extendido, intervalos y búsqueda binaria por tiempo |
+| `src/Models/LyricsfileTiming.swift` | Lectura de bloques temporales compatibles de Lyricsfile 1.0 |
 | `src/Models/PlaybackModels.swift` | Estado de reproducción, reloj y modos |
 | `src/Models/Track.swift` | Representación de las pistas y sus metadatos |
 | `src/Player/Player.swift` | Reproducción, navegación, cola y coordinación de motores |
@@ -93,8 +95,8 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 | `src/Services/AudioAtomics/` | Publicación del nivel RMS y final de segmento con operaciones atómicas sin bloqueos |
 | `src/Services/FilenameParser.swift` | Extracción de datos desde nombres de archivos |
 | `src/Services/LibraryCache.swift` | Cache de biblioteca y directorio de datos |
-| `src/Services/LyricsStore.swift` | Archivos LRC locales, consulta de LRCLIB y almacenamiento de letras descargadas como datos JSON en archivos `.js` |
-| `src/Services/LyricsSync.swift` | Sincronización por lotes, progreso y cancelación desde Ajustes |
+| `src/Services/LyricsStore.swift` | Prioridad del LRC local, consultas secuenciales a LRCLIB y caché atómica de letras y resultados negativos |
+| `src/Services/LyricsSync.swift` | Sincronización reanudable, reintentos por pista, progreso y cancelación desde Ajustes |
 | `src/Services/NowPlayingBridge.swift` | Integración de información multimedia y comandos remotos macOS |
 | `src/Services/PlaylistStore.swift` | Guarda y recupera las listas de reproducción como archivos `.js` con datos JSON |
 | `src/Services/SettingsStore.swift` | Lectura y guardado de settings.json |
@@ -117,7 +119,7 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 | `src/Views/Main/ColumnHeader.swift` | Cabeceras de columnas |
 | `src/Views/Main/ContentView.swift` | Vista de biblioteca y reproductor principal |
 | `src/Views/Main/HeaderBar.swift` | Cabecera principal |
-| `src/Views/Main/LyricsPlayerView.swift` | Vista de letras con desplazamiento sincronizado y salto por línea |
+| `src/Views/Main/LyricsPlayerView.swift` | Vista de letras con lectura directa del tiempo del motor, resaltado y seguimiento independiente del desplazamiento |
 | `src/Views/Main/PlayerBar.swift` | Controles, volumen, progreso y visualizador |
 | `src/Views/Main/TrackRow.swift` | Fila de canción y resaltado activo |
 | `src/Views/MiniPlayer/MiniPlayerView.swift` | Interfaz mini compacta y ampliada |

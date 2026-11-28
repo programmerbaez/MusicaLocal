@@ -13,6 +13,11 @@ struct MusicSettings: Codable {
     var audioEnabled: Bool = false
     var audioProfile: String = "balanced"
     var shortcuts: [String: Shortcut] = [:]
+    var lyricsFollow: Bool?
+    var lyricsAnimate: Bool?
+    var lyricsWords: Bool?
+    var lyricsSuspendOnScroll: Bool?
+    var lyricsOffsets: [String: Int]?
 
     static func current(folder: String?) -> MusicSettings {
         let ud = UserDefaults.standard
@@ -28,7 +33,12 @@ struct MusicSettings: Codable {
             cacheEnabled: ud.object(forKey: "cacheEnabled") as? Bool ?? true,
             audioEnabled: ud.bool(forKey: "audioEnhancementEnabled"),
             audioProfile: ud.string(forKey: "audioProfile") ?? "balanced",
-            shortcuts: map)
+            shortcuts: map,
+            lyricsFollow: ud.object(forKey: "lyricsFollow") as? Bool ?? true,
+            lyricsAnimate: ud.object(forKey: "lyricsAnimate") as? Bool ?? true,
+            lyricsWords: ud.object(forKey: "lyricsWords") as? Bool ?? true,
+            lyricsSuspendOnScroll: ud.object(forKey: "lyricsSuspendOnScroll") as? Bool ?? true,
+            lyricsOffsets: ud.data(forKey: "lyricsOffsets").map(LyricsOffsets.decode) ?? [:])
     }
 
     func apply() {
@@ -41,6 +51,13 @@ struct MusicSettings: Codable {
         ud.set(cacheEnabled, forKey: "cacheEnabled")
         ud.set(audioEnabled, forKey: "audioEnhancementEnabled")
         ud.set(audioProfile, forKey: "audioProfile")
+        if let lyricsFollow = lyricsFollow { ud.set(lyricsFollow, forKey: "lyricsFollow") }
+        if let lyricsAnimate = lyricsAnimate { ud.set(lyricsAnimate, forKey: "lyricsAnimate") }
+        if let lyricsWords = lyricsWords { ud.set(lyricsWords, forKey: "lyricsWords") }
+        if let lyricsSuspendOnScroll = lyricsSuspendOnScroll { ud.set(lyricsSuspendOnScroll, forKey: "lyricsSuspendOnScroll") }
+        if let lyricsOffsets = lyricsOffsets, let data = try? JSONEncoder().encode(lyricsOffsets) {
+            ud.set(data, forKey: "lyricsOffsets")
+        }
         if let data = try? JSONEncoder().encode(shortcuts) {
             ud.set(data, forKey: "shortcuts")
             ud.set(Array(shortcuts.keys), forKey: "shortcutsKnown")
@@ -90,5 +107,21 @@ final class SettingsStore {
         } catch {
             NSLog("Música Local: no se pudieron guardar los ajustes: %@", String(describing: error))
         }
+    }
+}
+
+enum LyricsOffsets {
+    static func decode(_ data: Data) -> [String: Int] {
+        (try? JSONDecoder().decode([String: Int].self, from: data)) ?? [:]
+    }
+
+    static func steps(in data: Data, trackID: String) -> Int {
+        min(240, max(-240, decode(data)[trackID] ?? 0))
+    }
+
+    static func updating(_ data: Data, trackID: String, steps: Int) -> Data {
+        var offsets = decode(data)
+        offsets[trackID] = steps == 0 ? nil : steps
+        return (try? JSONEncoder().encode(offsets)) ?? data
     }
 }
