@@ -102,6 +102,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     private var generation = 0
     private let genLock = NSLock()
+    private let libraryScanQueue = DispatchQueue(label: "com.local.musicalocal.library-scan", qos: .background)
 
     static let exts: Set<String> = ["mp3", "m4a", "aac", "wav", "aiff", "aif", "flac", "caf"]
 
@@ -225,8 +226,8 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             && cache?.version == LibraryCache.currentVersion
         let cached: [String: CachedTrack] = usable ? (cache?.entries ?? [:]) : [:]
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
+        libraryScanQueue.async { [weak self] in
+            guard let self = self, self.isCurrent(g) else { return }
 
             var initial: [Track] = []
             var pending: [Track] = []
@@ -237,7 +238,9 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 includingPropertiesForKeys: keys,
                 options: [.skipsHiddenFiles, .skipsPackageDescendants]
             ) {
-                for case let file as URL in en where Player.exts.contains(file.pathExtension.lowercased()) {
+                for case let file as URL in en {
+                    guard self.isCurrent(g) else { return }
+                    guard Player.exts.contains(file.pathExtension.lowercased()) else { continue }
                     let mtime = (try? file.resourceValues(forKeys: Set(keys)))?
                         .contentModificationDate?.timeIntervalSince1970 ?? 0
                     if let c = cached[file.path], c.mtime == mtime {
@@ -260,7 +263,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             initial.sort { $0.url.path.localizedStandardCompare($1.url.path) == .orderedAscending }
             let pendingCount = pending.count
 
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 guard self.isCurrent(g) else { return }
                 self.tracks = initial
                 self.metaTotal = pendingCount
@@ -269,35 +272,71 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             }
             if pendingCount == 0 { return }
 
-            // Leer metadatos de las canciones nuevas o modificadas (en paralelo, por lotes)
-            let chunkSize = 32
+            // Los lotes cortos permiten reajustar la prioridad al reproducir o pausar.
+            let chunkSize = 8
+            let workerCount = 2
             var start = 0
-            var done = 0
+            var buffered: [Track] = []
+            var nextUpdate = DispatchTime.now() + .milliseconds(250)
             while start < pending.count {
-                if !self.isCurrent(g) { return }
-                let chunk = Array(pending[start..<min(start + chunkSize, pending.count)])
-                var results = [Track?](repeating: nil, count: chunk.count)
-                let lock = NSLock()
-                DispatchQueue.concurrentPerform(iterations: chunk.count) { i in
-                    let t = Player.readTrack(chunk[i])
-                    lock.lock(); results[i] = t; lock.unlock()
-                }
-                let updated = results.compactMap { $0 }
-                done += chunk.count
-                let d = done
-                DispatchQueue.main.async {
-                    guard self.isCurrent(g) else { return }
-                    self.apply(updated)
-                    self.metaDone = d
-                }
-                start += chunkSize
-            }
-
-            DispatchQueue.main.async {
                 guard self.isCurrent(g) else { return }
-                self.isScanning = false
-                self.saveCache()
+                let qos: DispatchQoS.QoSClass = DispatchQueue.main.sync {
+                    self.isPlaying ? .background : .utility
+                }
+                let end = min(start + chunkSize, pending.count)
+                let chunk = Array(pending[start..<end])
+                let workers = min(workerCount, chunk.count)
+                let group = DispatchGroup()
+                let results = MetadataBatch()
+                for worker in 0..<workers {
+                    DispatchQueue.global(qos: qos).async(group: group) {
+                        var updated: [Track] = []
+                        for index in stride(from: worker, to: chunk.count, by: workers) {
+                            guard self.isCurrent(g) else { return }
+                            updated.append(autoreleasepool { Player.readTrack(chunk[index]) })
+                        }
+                        results.append(updated)
+                    }
+                }
+                group.wait()
+                guard self.isCurrent(g) else { return }
+                buffered.append(contentsOf: results.tracks)
+                start = end
+
+                let finished = end == pendingCount
+                guard finished || DispatchTime.now() >= nextUpdate else {
+                    continue
+                }
+                // Esperar la publicación evita acumular actualizaciones si la ventana está ocupada.
+                DispatchQueue.main.sync {
+                    guard self.isCurrent(g) else { return }
+                    self.apply(buffered)
+                    self.metaDone = end
+                    if finished {
+                        self.isScanning = false
+                        self.saveCache()
+                    }
+                }
+                buffered.removeAll(keepingCapacity: true)
+                nextUpdate = DispatchTime.now() + .milliseconds(250)
             }
+        }
+    }
+
+    private final class MetadataBatch {
+        private let lock = NSLock()
+        private var results: [Track] = []
+
+        var tracks: [Track] {
+            lock.lock()
+            defer { lock.unlock() }
+            return results
+        }
+
+        func append(_ tracks: [Track]) {
+            lock.lock()
+            defer { lock.unlock() }
+            results.append(contentsOf: tracks)
         }
     }
 
