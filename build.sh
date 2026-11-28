@@ -81,10 +81,10 @@ STAGED_APP="$TMP_DIR/$APP_NAME"
 BIN="$STAGED_APP/Contents/MacOS/MusicaLocal"
 mkdir -p "$(dirname "$BIN")"
 step 30 "Compilando y enlazando con swiftc (esta fase puede tardar)"
-log "Comando: swiftc -parse-as-library -O -target $TARGET <${#SOURCES[@]} archivos> -o <app temporal>"
+log "Comando: swiftc -parse-as-library -O -target $TARGET -I src/Services/AudioAtomics <${#SOURCES[@]} archivos> -o <app temporal>"
 # El compilador no proporciona un porcentaje fiable: se conserva 30% hasta que termine.
 # tee replica todos los diagnósticos tanto en consola como en los dos registros.
-swiftc -parse-as-library -O -target "$TARGET" "${SOURCES[@]}" -o "$BIN" \
+swiftc -parse-as-library -O -target "$TARGET" -I "$ROOT/src/Services/AudioAtomics" "${SOURCES[@]}" -o "$BIN" \
     2>&1 | tee -a "$LOG_FILE" "$HISTORY"
 step 85 "Compilación y enlace completados"
 

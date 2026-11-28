@@ -636,9 +636,10 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         if audioEnhancementEnabled {
             do {
                 let candidate = AudioEnhancementEngine()
-                try candidate.load(url: track.url, profile: audioProfile, volume: volume)
-                candidate.seek(position)
-                if !wasPlaying { candidate.pause() }
+                try candidate.load(url: track.url, profile: audioProfile, volume: volume, position: position)
+                if wasPlaying {
+                    guard candidate.resume() else { throw audioResumeError }
+                }
                 player?.stop()
                 player = nil
                 enhanced?.stop()
@@ -680,6 +681,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 do {
                     let candidate = AudioEnhancementEngine()
                     try candidate.load(url: track.url, profile: audioProfile, volume: volume)
+                    guard candidate.resume() else { throw audioResumeError }
                     processing = candidate
                     audioEngineWarning = nil
                 } catch {
@@ -743,6 +745,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         guard isPlaying else { return }
         enhanced?.pause()
         player?.pause()
+        clock.progress = currentPosition
         isPlaying = false
         clock.audioLevel = 0
     }
@@ -750,11 +753,19 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func resume() {
         guard player != nil || enhanced != nil else { togglePlay(); return }
         if !isPlaying {
-            enhanced?.resume()
+            if let enhanced = enhanced, !enhanced.resume() {
+                audioEngineWarning = audioResumeError.localizedDescription
+                return
+            }
             player?.play()
             isPlaying = true
             startTimer()
         }
+    }
+
+    private var audioResumeError: NSError {
+        NSError(domain: "MusicaLocal.Audio", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "No se pudo reanudar el motor experimental"])
     }
 
     /// Avanza a la siguiente canción. `auto` indica que la pista terminó sola:
@@ -810,10 +821,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         guard !list.isEmpty else { return }
 
         if currentPosition > 3 {
-            enhanced?.seek(0)
-            player?.currentTime = 0
-            clock.progress = 0
-            bridge?.scheduleRefresh()
+            seek(0)
             return
         }
 
@@ -832,9 +840,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
                     return
                 }
             }
-            enhanced?.seek(0)
-            player?.currentTime = 0
-            clock.progress = 0
+            seek(0)
             return
         }
 
@@ -844,9 +850,19 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
 
     func seek(_ time: Double) {
-        enhanced?.seek(time)
-        player?.currentTime = time
-        clock.progress = time
+        guard time.isFinite else { return }
+        if let enhanced = enhanced {
+            enhanced.seek(time)
+            if isPlaying && !enhanced.isPlaying {
+                isPlaying = false
+                clock.audioLevel = 0
+                audioEngineWarning = audioResumeError.localizedDescription
+            }
+            clock.progress = enhanced.currentTime
+        } else {
+            player?.currentTime = time
+            clock.progress = time
+        }
         bridge?.scheduleRefresh()
     }
 
@@ -856,8 +872,8 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     /// Fin de la cola (Repetir desactivado): se detiene y deja la última canción lista para volver a sonar.
     private func finishQueue() {
-        enhanced?.stop()
-        enhanced = nil
+        enhanced?.pause()
+        enhanced?.seek(0)
         player?.stop()
         player?.currentTime = 0
         timer?.invalidate()

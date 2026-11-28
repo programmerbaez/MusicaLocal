@@ -25,6 +25,7 @@ MusicaLocal_1.0.1/
 │   │   ├── ArtworkDisk.swift
 │   │   ├── ArtworkStore.swift
 │   │   ├── AudioEnhancementEngine.swift
+│   │   ├── AudioAtomics/           # Módulo C de operaciones atómicas para los callbacks de audio
 │   │   ├── FilenameParser.swift
 │   │   ├── LibraryCache.swift
 │   │   ├── LyricsStore.swift
@@ -89,6 +90,7 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 | `src/Services/ArtworkDisk.swift` | Miniaturas y persistencia de carátulas |
 | `src/Services/ArtworkStore.swift` | Carga de carátulas en memoria |
 | `src/Services/AudioEnhancementEngine.swift` | AVAudioEngine y perfiles experimentales de ecualización |
+| `src/Services/AudioAtomics/` | Publicación del nivel RMS y final de segmento con operaciones atómicas sin bloqueos |
 | `src/Services/FilenameParser.swift` | Extracción de datos desde nombres de archivos |
 | `src/Services/LibraryCache.swift` | Cache de biblioteca y directorio de datos |
 | `src/Services/LyricsStore.swift` | Archivos LRC locales, consulta de LRCLIB y almacenamiento de letras descargadas como datos JSON en archivos `.js` |

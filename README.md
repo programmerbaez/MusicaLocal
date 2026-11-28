@@ -173,7 +173,7 @@ flowchart TD
     B --> H[NowPlayingBridge: controles multimedia macOS]
 ```
 
-El audio experimental comienza desactivado. Los perfiles disponibles son **Original**, **Equilibrado**, **Graves** y **Voces**. Un archivo no admitido por ese motor debe seguir la ruta de respaldo; si falla un cambio de motor, desactiva mejoras desde Ajustes.
+El audio experimental comienza desactivado. En **Configuración → Audio** puedes elegir **Original**, **Equilibrado**, **Graves**, **Voces**, **Rock**, **Pop**, **Jazz**, **Clásica** o **Electrónica**. El perfil se aplica al instante si el motor experimental está activo. Si el motor no admite un archivo, la aplicación usa la salida original.
 
 ## Preferencias y datos
 
