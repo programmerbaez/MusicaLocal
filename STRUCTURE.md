@@ -28,6 +28,10 @@ MusicaLocal_1.0.2/
 │   │   ├── AudioEnhancementEngine.swift
 │   │   ├── AudioAtomics/           # Módulo C de operaciones atómicas para los callbacks de audio
 │   │   ├── FilenameParser.swift
+│   │   ├── ID3Metadata.swift
+│   │   ├── M4AMetadata.swift
+│   │   ├── MetadataRecognition.swift
+│   │   ├── MetadataWriter.swift
 │   │   ├── LibraryCache.swift
 │   │   ├── LyricsStore.swift
 │   │   ├── LyricsSync.swift
@@ -59,6 +63,7 @@ MusicaLocal_1.0.2/
 │       │   ├── ContentView.swift
 │       │   ├── HeaderBar.swift
 │       │   ├── LyricsPlayerView.swift
+│       │   ├── MetadataEditorView.swift
 │       │   ├── PlayerBar.swift
 │       │   └── TrackRow.swift
 │       ├── MiniPlayer/
@@ -67,6 +72,8 @@ MusicaLocal_1.0.2/
 │       └── Settings/
 │           ├── InitialSetupView.swift
 │           └── SettingsView.swift
+├── scripts/build-chromaprint.sh
+├── tests/check-metadata.sh
 ├── .gitignore
 ├── build.sh
 ├── LICENSE.md
@@ -126,6 +133,10 @@ Al compilar se crean **`logs/`**, **`release/app/MusicaLocal.app`** y **`release
 | `src/Views/MiniPlayer/MiniProgress.swift` | Progreso del mini reproductor |
 | `src/Views/Settings/InitialSetupView.swift` | Asistente de configuración inicial |
 | `src/Views/Settings/SettingsView.swift` | Preferencias de aspecto, audio, visualizador, caché y atajos |
+
+### Edición individual de etiquetas
+
+`MetadataEditorView` se abre desde el menú contextual de `ContentView`. `MetadataRecognition` separa la huella acústica, la búsqueda de grabaciones, las ediciones y la portada. `MetadataWriter`, `ID3Metadata` y `M4AMetadata` escriben las etiquetas confirmadas en una copia temporal sin recodificar el audio. El reproductor autoriza el reemplazo al cerrar el acceso al archivo seleccionado y actualiza la pista y la cola por ruta. La recarga invalida la miniatura y el color guardado para esa pista.
 
 ## 3. Relación entre subsistemas
 

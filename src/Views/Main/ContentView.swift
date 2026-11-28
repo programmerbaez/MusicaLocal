@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var creationError: String?
     @State private var playlistError: String?
     @State private var showingLyrics = false
+    @State private var metadataTrack: Track?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,6 +56,9 @@ struct ContentView: View {
         .onChange(of: p.activePlaylistID) { _ in showingLyrics = false }
         .onChange(of: p.query) { _ in showingLyrics = false }
         .sheet(isPresented: $creatingPlaylist) { playlistForm }
+        .sheet(item: $metadataTrack) { track in
+            MetadataEditorView(track: track, player: p, accent: accent)
+        }
         .alert("No se pudo actualizar la lista", isPresented: Binding(
             get: { playlistError != nil },
             set: { if !$0 { playlistError = nil } }
@@ -176,6 +180,9 @@ struct ContentView: View {
                                             }
                                         }
                                         Divider()
+                                        Button { metadataTrack = t } label: {
+                                            Label("Actualizar metadatos…", systemImage: "music.note.list")
+                                        }
                                         Button { NSWorkspace.shared.activateFileViewerSelecting([t.url]) } label: {
                                             Label("Mostrar en Finder", systemImage: "folder")
                                         }

@@ -21,6 +21,8 @@ El usuario es responsable de contar con las autorizaciones necesarias para obten
 
 La aplicación solicita al usuario seleccionar las carpetas que desea explorar. Puede crear cachés locales con información de la biblioteca, imágenes de portada y preferencias, en la carpeta de soporte de la aplicación. Consulta [PRIVACIDAD.md](PRIVACIDAD.md) para más información.
 
+La identificación acústica es opcional y utiliza servicios de terceros sujetos a sus propias condiciones. Una portada descargada puede estar protegida por derechos de autor. Incrustarla en un archivo no concede permiso para redistribuirla. El guardado de etiquetas modifica el archivo elegido después de la confirmación del usuario y conserva una copia de recuperación local. [Condiciones de AcoustID](https://acoustid.org/webservice) · [Licencias de datos de MusicBrainz](https://musicbrainz.org/doc/About/Data_License) · [Cover Art Archive](https://musicbrainz.org/doc/Cover_Art_Archive)
+
 ## 5. Procesamiento de sonido
 
 Las mejoras de audio y sus perfiles son opcionales y pueden desactivarse. Su resultado depende de los archivos, el equipo de salida y la configuración. No se garantiza una mejora perceptible ni la recuperación de información eliminada por formatos con pérdida.

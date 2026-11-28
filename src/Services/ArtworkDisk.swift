@@ -39,6 +39,11 @@ enum ArtworkDisk {
         try? Data().write(to: none(key), options: .atomic)
     }
 
+    static func remove(_ key: String) {
+        try? FileManager.default.removeItem(at: jpg(key))
+        try? FileManager.default.removeItem(at: none(key))
+    }
+
     static func clear() {
         try? FileManager.default.removeItem(at: directory)
     }

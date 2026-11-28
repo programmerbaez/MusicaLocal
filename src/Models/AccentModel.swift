@@ -195,6 +195,12 @@ final class AccentModel: ObservableObject {
         retarget()
     }
 
+    func invalidateArtwork(for track: Track) {
+        domCache.removeValue(forKey: track.id)
+        noDominant.remove(track.id)
+        if lastTrack?.id == track.id { trackChanged(track) }
+    }
+
     func trackChanged(_ track: Track?) {
         lastTrack = track
         guard mode == .artwork else { return }

@@ -37,6 +37,9 @@ struct ArtworkView: View {
         .onAppear { load() }
         .onDisappear { ArtworkStore.shared.cancel(token) }
         .onChange(of: url) { _ in load() }
+        .onReceive(NotificationCenter.default.publisher(for: ArtworkStore.didInvalidateArtwork)) { event in
+            if event.object as? String == url?.path { load() }
+        }
     }
 
     private func load() {

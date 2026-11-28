@@ -119,6 +119,25 @@ for document in LICENSE.md TERMINOS_Y_CONDICIONES.md PRIVACIDAD.md; do
 done
 log "Localización española y documentos legales incorporados al paquete"
 
+# El reconocimiento se distribuye con una biblioteca preparada por el mantenedor.
+if [[ -n "${MUSICALOCAL_CHROMAPRINT_DIR:-}" ]]; then
+    CHROMAPRINT_DIR="$MUSICALOCAL_CHROMAPRINT_DIR"
+    CHROMAPRINT_LIBRARY="$CHROMAPRINT_DIR/libchromaprint.dylib"
+    CHROMAPRINT_SOURCE="$CHROMAPRINT_DIR/chromaprint-1.6.0.tar.gz"
+    [[ -s "$CHROMAPRINT_LIBRARY" && -s "$CHROMAPRINT_SOURCE" && -s "$CHROMAPRINT_DIR/LICENSE.md" ]]
+    lipo "$CHROMAPRINT_LIBRARY" -verify_arch "$ARCH"
+    CHROMAPRINT_RESOURCES="$STAGED_APP/Contents/Resources/ThirdParty/Chromaprint"
+    mkdir -p "$STAGED_APP/Contents/Frameworks" "$CHROMAPRINT_RESOURCES"
+    cp -L "$CHROMAPRINT_LIBRARY" "$STAGED_APP/Contents/Frameworks/libchromaprint.dylib"
+    cp "$CHROMAPRINT_SOURCE" "$CHROMAPRINT_DIR/LICENSE.md" "$CHROMAPRINT_RESOURCES/"
+    cp "$ROOT/scripts/build-chromaprint.sh" "$CHROMAPRINT_RESOURCES/"
+    if [[ -n "${MUSICALOCAL_ACOUSTID_CLIENT:-}" ]]; then
+        [[ "$MUSICALOCAL_ACOUSTID_CLIENT" =~ ^[A-Za-z0-9_-]{1,128}$ ]]
+        plutil -insert AcoustIDClientKey -string "$MUSICALOCAL_ACOUSTID_CLIENT" "$STAGED_APP/Contents/Info.plist"
+    fi
+    log "Chromaprint, licencia y código fuente incorporados al paquete"
+fi
+
 # Crear icono .icns con herramientas incluidas en macOS (sin proyecto Xcode).
 ICON_PNG="$ROOT/assets/AppIcon.png"
 if [[ ! -f "$ICON_PNG" ]]; then

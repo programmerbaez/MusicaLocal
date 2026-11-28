@@ -151,6 +151,13 @@ flowchart TD
 - Usa la posición del motor para la vista de letras, con el seguimiento del desplazamiento independiente del resaltado. Respeta «Reducir movimiento» y conserva el desfase de cada canción en las preferencias.
 - La sincronización masiva debe ser cancelable, reutilizar copias guardadas y respetar `Retry-After`. Las pruebas sintéticas se ejecutan con `bash tests/check-lyrics.sh`.
 
+### Edición individual de metadatos
+
+- El menú «Actualizar metadatos…» abre un editor individual. La huella acústica y las consultas se inician únicamente con «Identificar canción». La escritura requiere «Aplicar cambios» y una selección explícita de campos.
+- Mantén la selección de grabación separada de la edición del álbum. Conserva las etiquetas no editadas y los datos de audio, la ruta y su identidad en colas y listas.
+- Prepara y verifica el archivo en el mismo volumen, conserva una copia recuperable y coordina el reemplazo con el reproductor. Usa audio sintético o copias de pruebas con `bash tests/check-metadata.sh`.
+- Para el reconocimiento distribuido usa el flujo de Chromaprint documentado en `README.md`. Conserva los avisos y el código fuente correspondiente, y mantén las claves personales fuera de fuentes, registros y paquetes.
+
 ### Ajustes y primera ejecución
 
 - Secciones: Apariencia, Atajos, Audio, Visualizador, Letras y Caché.

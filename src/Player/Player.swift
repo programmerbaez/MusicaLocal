@@ -103,11 +103,14 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     var currentPosition: Double { enhanced?.currentTime ?? player?.currentTime ?? 0 }
 
+    private var metadataWriteURL: URL?
+    private var pendingMetadataPlayback: (Track, Bool)?
     private var player: AVAudioPlayer?
     private var enhanced: AudioEnhancementEngine?
     @Published private(set) var audioEngineWarning: String?
     private var timer: Timer?
     private var cache: LibraryCache?
+    private let libraryCacheWriteQueue = DispatchQueue(label: "musicalocal.library-cache", qos: .utility)
     private var failures = 0
     @Published private(set) var upcomingQueue: [Track] = []
     private var history: [String] = []
@@ -371,8 +374,15 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
             return (items.first?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
-        var title = str(.commonKeyTitle)
-        var artist = str(.commonKeyArtist)
+        let flacTags = t.url.pathExtension.lowercased() == "flac" ? MetadataWriter.flacLibraryTags(for: t.url) : [:]
+        func tag(_ tag: MusicTag, fallback key: AVMetadataKey) -> String {
+            if let text = flacTags[tag]?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
+                return text
+            }
+            return str(key)
+        }
+        var title = tag(.title, fallback: .commonKeyTitle)
+        var artist = tag(.artist, fallback: .commonKeyArtist)
         let parsed = FilenameParser.parse(t.url.deletingPathExtension().lastPathComponent)
 
         if title.isEmpty {
@@ -385,7 +395,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
         r.title = title
         r.artist = artist
-        r.album = str(.commonKeyAlbumName)
+        r.album = tag(.album, fallback: .commonKeyAlbumName)
         let d = asset.duration.seconds
         r.duration = d.isFinite ? d : 0
         r.loaded = true
@@ -402,6 +412,36 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         tracks = copy
         if let id = nowPlaying?.id, let u = updated.first(where: { $0.id == id }) {
             nowPlaying = u
+        }
+    }
+
+    func isOpenForPlayback(_ url: URL) -> Bool {
+        guard let current = nowPlaying?.url else { return false }
+        return current.resolvingSymlinksInPath() == url.resolvingSymlinksInPath()
+    }
+
+    func closePlaybackForMetadata(_ url: URL) {
+        if isOpenForPlayback(url) { stopPlayback() }
+    }
+
+    func beginMetadataReplacement(_ url: URL) throws {
+        guard metadataWriteURL == nil, !isOpenForPlayback(url), !isScanning else {
+            throw MetadataError("Detén esta canción o espera a que finalice la lectura de la biblioteca.")
+        }
+        metadataWriteURL = url.resolvingSymlinksInPath()
+    }
+
+    func finishMetadataReplacement(_ updated: Track?) {
+        if let updated = updated {
+            apply([updated])
+            upcomingQueue = upcomingQueue.map { $0.id == updated.id ? updated : $0 }
+            shufflePlan = shufflePlan.map { $0.id == updated.id ? updated : $0 }
+            saveCache()
+        }
+        metadataWriteURL = nil
+        if let (track, recordHistory) = pendingMetadataPlayback {
+            pendingMetadataPlayback = nil
+            play(updated?.id == track.id ? updated ?? track : track, recordHistory: recordHistory)
         }
     }
 
@@ -650,7 +690,7 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
         let c = LibraryCache(folderPath: folder.path, entries: entries,
                              version: LibraryCache.currentVersion)
         cache = c
-        DispatchQueue.global(qos: .utility).async { CacheStore.save(c) }
+        libraryCacheWriteQueue.async { CacheStore.save(c) }
     }
 
     func clearCache() {
@@ -787,6 +827,11 @@ final class Player: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
 
     func play(_ track: Track, recordHistory: Bool = true) {
+        if let url = metadataWriteURL, track.url.resolvingSymlinksInPath() == url {
+            pendingMetadataPlayback = (track, recordHistory)
+            return
+        }
+        pendingMetadataPlayback = nil
         do {
             // Siempre conservar AVAudioPlayer como ruta fiable para archivos no compatibles.
             var original: AVAudioPlayer? = nil

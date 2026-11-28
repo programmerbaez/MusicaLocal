@@ -27,6 +27,7 @@ Música Local reproduce una biblioteca de archivos locales con una interfaz Swif
 | Reproducción | Reproducir, pausar, avanzar, retroceder, buscar posición, volumen y silencio |
 | Biblioteca | Selección de carpeta, metadatos, carátulas, actualización y caché |
 | Cola | Orden automático, aleatorio, selección directa y resaltado de pista actual |
+| Etiquetas | Identificación acústica bajo demanda y edición individual de MP3, FLAC y M4A compatibles |
 | Letras | Vista de reproducción con carátula, letra y seguimiento por línea o palabra en el reproductor principal |
 | Listas de reproducción | Creación con nombre, edición de canciones y reproducción desde la lista seleccionada |
 | Interfaz | Reproductor principal, mini compacto y mini ampliado, con transiciones que respetan «Reducir movimiento» de macOS |
@@ -144,6 +145,36 @@ Las descargas se guardan como datos JSON en archivos `.js` dentro de `~/Library/
 En macOS, ejecuta `bash tests/check-lyrics.sh` para comprobar marcas conocidas, letras sin tiempos, desfases, pausas musicales, caché y respuestas HTTP simuladas. Las pruebas usan un directorio temporal y un servicio simulado.
 
 Para la comprobación visual en Monterey, usa una canción con un LRC local que tenga marcas conocidas por línea y otra con marcas por palabra. Pausa a mitad de palabra, reanuda, salta hacia adelante y atrás y cambia de canción varias veces. Repite con el motor original y el experimental. Desplaza la letra sin pulsar una línea y comprueba que solo se suspende el centrado. Vuelve a la línea actual, prueba ambos signos del desfase y reabre la app para verificar su persistencia. Alterna entre ambos mini reproductores y la ventana principal, minimiza la ventana y repite con «Reducir movimiento» activado.
+
+### Actualizar metadatos de una canción
+
+1. Haz clic derecho sobre una canción de la biblioteca y elige **Actualizar metadatos…**. La ventana muestra las etiquetas y la carátula actuales.
+2. Pulsa **Identificar canción** para generar una huella local. AcoustID recibe la huella y la duración; MusicBrainz consulta las ediciones de la grabación que elijas. Introduce en el diálogo tu clave de usuario de AcoustID cuando corresponda. AcoustID la exige desde el 1 de enero de 2027. La clave de usuario se descarta al cerrar la ventana.
+3. Compara título, artista, duración, puntuación devuelta por AcoustID e identificador de grabación. Elige una edición concreta para obtener álbum, artista del álbum, fecha, números de pista y disco y portada frontal. Puedes conservar los datos del álbum si la edición es incierta. Si la edición no tiene portada, se conserva la original.
+4. Marca cada campo que quieras actualizar y corrige los valores propuestos si hace falta. También puedes introducir etiquetas manualmente sin hacer una búsqueda. Marca **Incrustar portada frontal** para guardar la portada propuesta dentro del audio.
+5. Pulsa **Aplicar cambios**. Si la pista está abierta incluso en pausa, pulsa antes **Detener esta canción**. La cola y las listas conservan su orden y sus referencias. La aplicación volverá a cargar la pista cuando decidas reproducirla.
+
+Se admiten FLAC nativos con comentarios Vorbis y bloques PICTURE, MP3 con ID3v2.3/2.4 compatible o sin ID3v2 y M4A autónomos no fragmentados con etiquetas de iTunes. Los archivos con estructuras incompatibles, enlaces o permisos insuficientes conservan su contenido. Para MP3 con ID3v2.3 se guarda el año de cuatro cifras. En M4A el formato de pista y disco es número o número/total.
+
+La aplicación prepara el archivo en el mismo volumen, comprueba las etiquetas y verifica con SHA-256 que se conservaron los datos de audio. El respaldo queda en una carpeta oculta `.musicalocal-…` junto al archivo y **Mostrar copia de recuperación en Finder** abre su ubicación. Para restaurarlo manualmente, detén la pista y sustituye el archivo editado por esa copia, conservando la ruta y el nombre originales. Recarga la biblioteca si lo restauras fuera de la aplicación. Cada edición exitosa conserva una copia independiente hasta que decidas eliminarla.
+
+#### Compilar con reconocimiento acústico
+
+La edición local funciona con el build estándar. Para distribuir el reconocimiento, el mantenedor prepara Chromaprint **1.6.0** a partir del archivo fuente oficial enlazado abajo. Se necesita CMake solo en la máquina de compilación. El script verifica el SHA-256, usa vDSP de Accelerate y el remuestreador incluido en el código fuente de Chromaprint, y construye una biblioteca dinámica para la arquitectura del equipo con destino macOS 12. AVFoundation decodifica la pista en bloques. El usuario final no instala herramientas adicionales. [Código fuente de Chromaprint 1.6.0](https://github.com/acoustid/chromaprint/archive/refs/tags/v1.6.0.tar.gz)
+
+```bash
+scripts/build-chromaprint.sh "/ruta/chromaprint-1.6.0.tar.gz" "/ruta/Chromaprint preparado"
+export MUSICALOCAL_CHROMAPRINT_DIR="/ruta/Chromaprint preparado"
+# Configurar MUSICALOCAL_ACOUSTID_CLIENT con la clave de aplicación registrada del proyecto.
+./build.sh
+bash tests/check-metadata.sh
+```
+
+Registra la aplicación en AcoustID, configura la variable de entorno fuera del repositorio y expórtala antes del build. El empaquetado incorpora esa clave **de aplicación** en el Info.plist. Las claves **de usuario** son personales y se introducen en el diálogo. API gratuita para usos no comerciales según sus condiciones. [Documentación de AcoustID](https://acoustid.org/webservice)
+
+El paquete incluye el binario dinámico, el archivo fuente verificado, los avisos de licencia y el script de compilación en `Contents/Resources/ThirdParty/Chromaprint` y `Contents/Frameworks`. Conserva esos recursos en el ZIP y DMG. El código de Música Local sigue bajo MIT. El binario de Chromaprint incluye código bajo LGPL 2.1 y puede sustituirse por una compilación compatible de la biblioteca. Genéralo por arquitectura y conserva el esquema de firma de la aplicación al redistribuirla. [Licencia de Chromaprint](https://github.com/acoustid/chromaprint/blob/v1.6.0/LICENSE.md)
+
+`tests/check-metadata.sh` usa pistas sintéticas y respuestas simuladas. Con la variable `MUSICALOCAL_CHROMAPRINT_DIR`, mide también la huella real con un WAV sintético de dos minutos.
 
 ### Listas de reproducción
 

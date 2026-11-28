@@ -16,18 +16,21 @@ import QuartzCore
 ///  · cancelación de lo que ya salió de pantalla y deduplicación de peticiones iguales.
 final class ArtworkStore {
     static let shared = ArtworkStore()
+    static let didInvalidateArtwork = Notification.Name("MusicaLocal.didInvalidateArtwork")
     typealias Token = UInt64
 
     private struct Request {
         let id: Token
         let url: URL
         let large: Bool
+        let cacheKey: String
         let completion: (NSImage?) -> Void
     }
 
     private let thumbs = NSCache<NSString, NSImage>()
     private let larges = NSCache<NSString, NSImage>()
     private var missing = Set<String>()
+    private var revisions: [String: Int] = [:]
     private var pending: [String: [Request]] = [:]
     private var order: [String] = []
     private var inflight = Set<String>()
@@ -56,26 +59,42 @@ final class ArtworkStore {
         if clearDisk { ArtworkDisk.clear() }
     }
 
+    func invalidate(_ url: URL) {
+        let path = url.path
+        lock.lock()
+        let revision = revisions[path, default: 0]
+        let previous = "\(revision)|\(path)"
+        thumbs.removeObject(forKey: previous as NSString)
+        larges.removeObject(forKey: previous as NSString)
+        missing.remove(previous)
+        revisions[path] = revision + 1
+        lock.unlock()
+        NotificationCenter.default.post(name: Self.didInvalidateArtwork, object: path)
+    }
+
     /// Pide una carátula. `completion` se llama en el hilo principal (de inmediato si ya está en memoria).
     @discardableResult
     func request(url: URL, large: Bool, completion: @escaping (NSImage?) -> Void) -> Token {
         let path = url.path
         let cache = large ? larges : thumbs
-        if let hit = cache.object(forKey: path as NSString) {
+        lock.lock()
+        let cacheKey = "\(revisions[path, default: 0])|\(path)"
+        if let hit = cache.object(forKey: cacheKey as NSString) {
+            lock.unlock()
             completion(hit)
             return 0
         }
 
-        lock.lock()
-        if missing.contains(path) {
+        if missing.contains(cacheKey) {
             lock.unlock()
             completion(nil)
             return 0
         }
         nextToken += 1
         let tok = nextToken
-        let k = ArtworkStore.key(path, large)
-        pending[k, default: []].append(Request(id: tok, url: url, large: large, completion: completion))
+        let k = ArtworkStore.key(cacheKey, large)
+        pending[k, default: []].append(Request(id: tok, url: url, large: large, cacheKey: cacheKey,
+                                               completion: completion))
         order.removeAll { $0 == k }
         order.append(k)
         lock.unlock()
@@ -127,16 +146,21 @@ final class ArtworkStore {
 
     private func process(key: String, requests: [Request]) {
         let first = requests[0]
-        let image = produce(url: first.url, large: first.large)
-        finish(key: key, path: first.url.path, large: first.large, image: image, requests: requests)
+        let image = produce(first)
+        finish(key: key, first: first, image: image, requests: requests)
     }
 
-    private func finish(key: String, path: String, large: Bool, image: NSImage?, requests: [Request]) {
-        if let image = image {
-            (large ? larges : thumbs).setObject(image, forKey: path as NSString)
-        }
+    private func finish(key: String, first: Request, image: NSImage?, requests: [Request]) {
         lock.lock()
-        if image == nil { missing.insert(path) }
+        let path = first.url.path
+        let current = first.cacheKey == "\(revisions[path, default: 0])|\(path)"
+        if current {
+            if let image = image {
+                (first.large ? larges : thumbs).setObject(image, forKey: first.cacheKey as NSString)
+            } else {
+                missing.insert(first.cacheKey)
+            }
+        }
         inflight.remove(key)
         active -= 1
         let late = pending.removeValue(forKey: key) ?? []
@@ -145,23 +169,26 @@ final class ArtworkStore {
 
         let all = requests + late
         DispatchQueue.main.async {
-            for r in all { r.completion(image) }
+            self.lock.lock()
+            let current = first.cacheKey == "\(self.revisions[path, default: 0])|\(path)"
+            self.lock.unlock()
+            if current { for r in all { r.completion(image) } }
         }
         pump()
     }
 
     // MARK: Producción de imágenes
 
-    private func produce(url: URL, large: Bool) -> NSImage? {
-        let path = url.path
-        let nsPath = path as NSString
+    private func produce(_ request: Request) -> NSImage? {
+        let url = request.url
+        let large = request.large
+        let nsPath = request.cacheKey as NSString
         let diskOn = UserDefaults.standard.bool(forKey: "cacheEnabled")
         let dkey = diskOn ? ArtworkDisk.key(for: url) : ""
 
         if !large {
             // 1) A partir de la versión grande ya decodificada
             if let big = larges.object(forKey: nsPath), let t = ArtworkStore.resize(big, maxPixel: 120) {
-                if diskOn { ArtworkDisk.writeThumb(t, key: dkey) }
                 return t
             }
             // 2) Desde la caché de disco (sin abrir el audio)
